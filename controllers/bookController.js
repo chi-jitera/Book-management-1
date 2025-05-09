@@ -32,6 +32,15 @@ exports.updateBook = async (req, res) => {
     }
 };
 
+exports.patchBook = async (req, res) => {
+    try {
+        const book = await bookService.patchBook(req.params.id, req.body);
+        res.json(book);
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+};
+
 exports.deleteBook = async (req, res) => {
     try {
         const message = await bookService.deleteBook(req.params.id);
