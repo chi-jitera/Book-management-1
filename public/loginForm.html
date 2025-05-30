@@ -1,0 +1,86 @@
+
+<div class="background">
+  <div class="username-input-container">
+    <span class="username-icon"></span>
+    <input class="username-input" placeholder="USERNAME">
+  </div>
+  <div class="password-input-container">
+    <span class="password-icon"></span>
+    <input type="password" class="password-input" placeholder="PASSWORD">
+  </div>
+  <div class="login-button-container">
+    <button class="login-button">LOGIN</button>
+  </div>
+  <div class="forgot-password-container">
+    <a href="#" class="forgot-password-link">Forgot password?</a>
+  </div>
+</div>
+<style>
+  .background {
+    background-color: #1a73e8;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+  }
+  .username-input-container, .password-input-container {
+    display: flex;
+    align-items: center;
+    width: 300px;
+    height: 40px;
+    border: 1px solid #fff;
+    border-radius: 4px;
+    padding: 0 10px;
+    background-color: transparent;
+    margin-top: 10px;
+  }
+  .username-icon, .password-icon {
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    background-color: #ccc;
+    border-radius: 50%;
+    margin-right: 10px;
+  }
+  .username-input, .password-input {
+    flex: 1;
+    border: none;
+    background-color: transparent;
+    color: #fff;
+    font-size: 16px;
+    outline: 0;
+  }
+  .login-button-container {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+  }
+  .login-button {
+    background-color: #fff;
+    color: #1a73e8;
+    font-size: 16px;
+    font-weight: 700;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0,0,0,.1);
+  }
+  .login-button:hover {
+    background-color: #f0f0f0;
+  }
+  .forgot-password-container {
+    text-align: center;
+    margin-top: 20px;
+  }
+  .forgot-password-link {
+    color: #fff;
+    font-size: 14px;
+    text-decoration: none;
+  }
+  .forgot-password-link:hover {
+    text-decoration: underline;
+  }
+</style>
