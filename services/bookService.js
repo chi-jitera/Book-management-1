@@ -34,3 +34,17 @@ exports.deleteBook = async (bookId) => {
     if (!book) throw new Error('Book not found');
     return { message: 'Book deleted successfully' };
 };
+
+exports.searchBooks = async (searchCriteria) => {
+    const query = {};
+    if (searchCriteria.title) {
+        query.title = { $regex: searchCriteria.title, $options: 'i' };
+    }
+    if (searchCriteria.author) {
+        query.author = { $regex: searchCriteria.author, $options: 'i' };
+    }
+    if (searchCriteria.genre) {
+        query.genre = { $regex: searchCriteria.genre, $options: 'i' };
+    }
+    return await Book.find(query);
+};
