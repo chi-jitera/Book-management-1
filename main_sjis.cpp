@@ -2,6 +2,6 @@
 
 int main() {
     // これは挨拶メッセージを表示する関数です
-    std::cout << "こんにちは、世界！" << std::endl;
+    std::cout << "こんにちは、世界、カタカナ！" << std::endl;
     return 0;
 }
