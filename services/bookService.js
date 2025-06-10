@@ -17,7 +17,7 @@ exports.getAllBooks = async () => {
 };
 
 exports.getBookById = async (bookId) => {
-    const book = await Book.findById(bookId);
+    const book = await Book.findById(bookId).lean();
     if (!book) throw new Error('Book not found');
     return book;
 };
