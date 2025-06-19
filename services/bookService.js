@@ -1,11 +1,22 @@
 const Book = require('../models/Book');
 
+/**
+ * Validates the book data.
+ * @param {Object} bookData - The data of the book to validate.
+ * @throws Will throw an error if the published year is in the future.
+ */
 const validateBookData = (bookData) => {
     if (bookData.publishedYear > new Date().getFullYear()) {
         throw new Error('Published year cannot be in the future.');
     }
 };
 
+/**
+ * Creates a new book in the database.
+ * @param {Object} bookData - The data of the book to create.
+ * @returns {Promise<Object>} The created book object.
+ * @throws Will throw an error if validation fails or saving to the database fails.
+ */
 exports.createBook = async (bookData) => {
     validateBookData(bookData);
     const book = new Book(bookData);
