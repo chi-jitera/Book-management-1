@@ -1,11 +1,12 @@
-const mongoose = require('../config/db');
+<changes><change><info>Ensure schema matches documented fields and maintains compatibility with update operations.</info><content>// /models/Book.js
+const mongoose = require('mongoose');
 
 const bookSchema = new mongoose.Schema({
-    title: { type: String, required: true },
-    author: { type: String, required: true },
-    publishedYear: { type: Number, required: true },
-    genre: { type: String, required: true },
-    available: { type: Boolean, default: true }
+  title: { type: String, required: true },
+  author: String,
+  publishedDate: Date,
+  genre: String
 });
 
-module.exports = mongoose.model('Book', bookSchema);
+module.exports = mongoose.model('Book', bookSchema);</content></change>
+          </changes>
