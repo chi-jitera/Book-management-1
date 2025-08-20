@@ -6,6 +6,26 @@ const validateBookData = (bookData) => {
     }
 };
 
+// PATCH (partial update)
+exports.patchBook = async (bookId, patchData) => {
+    validateBookData(patchData);
+    const book = await Book.findByIdAndUpdate(
+        bookId,
+        { $set: patchData },
+        { new: true, runValidators: true }
+    );
+    if (!book) throw new Error('Book not found');
+    return book;
+};
+
+exports.deleteBook = async (bookId) => {
+    const book = await Book.findByIdAndDelete(bookId);
+    if (!book) throw new Error('Book not found');
+    return { message: 'Book deleted successfully' };
+};
+    }
+};
+
 exports.createBook = async (bookData) => {
     validateBookData(bookData);
     const book = new Book(bookData);
