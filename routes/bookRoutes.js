@@ -8,6 +8,8 @@ router.get('/books', bookController.getAllBooks);
 router.get('/books/search', bookController.searchBooks);
 router.get('/books/:id', bookController.getBookById);
 router.put('/books/:id', bookController.updateBook);
+router.patch('/books/:id', bookController.patchBook); // <-- Added PATCH
+
 
 
 router.delete('/books/:id', bookController.deleteBook);
