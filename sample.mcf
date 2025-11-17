@@ -1,0 +1,15 @@
+[metadata]
+name=Sample MCF File
+version=1.0
+created=2025-11-17
+description=This is a test MCF file
+
+[content]
+type=configuration
+format=text/plain
+encoding=utf-8
+
+[data]
+key1=value1
+key2=value2
+status=active

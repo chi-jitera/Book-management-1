@@ -1,0 +1,19 @@
+[header]
+file_type=MFF
+version=1.0
+timestamp=2025-11-17T00:00:00Z
+
+[metadata]
+author=Test User
+project=Jitera Test
+description=Sample MFF file for testing
+
+[properties]
+enabled=true
+priority=high
+timeout=3600
+
+[entries]
+entry1=data_one
+entry2=data_two
+entry3=data_three
