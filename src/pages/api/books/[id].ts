@@ -6,9 +6,9 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 let books: { id: string; [key: string]: any }[] = []; // Replace with proper DB/model in implementation
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
-  // Validate HTTP method
-  if (req.method !== 'DELETE') {
-    res.setHeader('Allow', ['DELETE']);
+  const allowedMethods = ['DELETE', 'PATCH'];
+  if (!allowedMethods.includes(req.method!)) {
+    res.setHeader('Allow', allowedMethods);
     return res.status(405).json({ message: 'Method Not Allowed' });
   }
 
@@ -26,7 +26,29 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     return res.status(404).json({ message: 'Book not found.' });
   }
 
-  // Delete the book
+  // PATCH method: Partial update
+  if (req.method === 'PATCH') {
+    const updateData = req.body;
+    if (!updateData || typeof updateData !== 'object') {
+      return res.status(400).json({ message: 'Invalid update data.' });
+    }
+    // Validate publishedDate, if present
+    if (updateData.publishedDate) {
+      const today = new Date();
+      const publishedDateObj = new Date(updateData.publishedDate);
+      if (publishedDateObj > today) {
+        return res.status(400).json({ message: 'publishedDate cannot be in the future.' });
+      }
+    }
+    // Update only present fields
+    Object.keys(updateData).forEach((key) => {
+      books[index][key] = updateData[key];
+    });
+    // Respond with updated book
+    return res.status(200).json(books[index]);
+  }
+
+  // DELETE method
   books.splice(index, 1);
 
   // Success response
