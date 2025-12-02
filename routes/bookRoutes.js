@@ -8,6 +8,9 @@ router.get('/books', bookController.getAllBooks);
 router.get('/books/search', bookController.searchBooks);
 router.get('/books/:id', bookController.getBookById);
 router.put('/books/:id', bookController.updateBook);
+// REGISTER PATCH endpoint for partial book update
+router.patch('/books/:id', bookController.patchBook);
+
 
 
 router.delete('/books/:id', bookController.deleteBook);
