@@ -12,6 +12,11 @@ router.put('/books/:id', bookController.updateBook);
 router.patch('/books/:id', bookController.patchBook);
 
 
+// ADD PATCH route
+router.patch('/books/:id', bookController.patchBook);
+
+
+
 
 router.delete('/books/:id', bookController.deleteBook);
 
