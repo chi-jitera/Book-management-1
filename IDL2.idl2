@@ -1,0 +1,254 @@
+PROGRAM EOD_POSTING
+
+    CONST
+        BUSINESS_DATE       : DATE
+        ANNUAL_RATE         : DECIMAL(5,4)    /* 例: 0.0150 = 1.50% */
+        MAX_WITHDRAW_LIMIT  : DECIMAL(15,2)   /* １回当たり払出限度額 */
+        ROUNDING_MODE       : STRING(8)       /* 'TRUNC' or 'ROUND' */
+    END CONST
+
+    /* レコード定義 */
+    RECORD ACCOUNT IS
+        ACCOUNT_NO      : STRING(12)
+        CUSTOMER_ID     : STRING(12)
+        STATUS          : STRING(1)     /* 'A' 有効, 'S' 停止, 'C' 解約済 */
+        OPEN_DATE       : DATE
+        BALANCE         : DECIMAL(15,2)
+        ACCRUED_INT     : DECIMAL(15,2) /* 未払利息（計上済み未支払） */
+        LAST_INT_DATE   : DATE
+    END RECORD
+
+    RECORD TRANSACTION IS
+        TXN_ID          : STRING(16)
+        ACCOUNT_NO      : STRING(12)
+        TXN_DATE        : DATE
+        TXN_TYPE        : STRING(2)     /* 'DP' 預入, 'WD' 払出, 'TR' 振替(簡略) */
+        AMOUNT          : DECIMAL(15,2)
+        REMARK          : STRING(40)
+        ORIGIN_CODE     : STRING(4)     /* チャネル等（ATM/BRCH/NET） */
+    END RECORD
+
+    RECORD GL_ENTRY IS
+        GL_DATE         : DATE
+        REF_TXN_ID      : STRING(16)
+        DEBIT_ACCT      : STRING(8)
+        CREDIT_ACCT     : STRING(8)
+        AMOUNT          : DECIMAL(15,2)
+        MEMO            : STRING(40)
+    END RECORD
+
+    RECORD CONTROL IS
+        PARAM_NAME      : STRING(20)
+        PARAM_VALUE     : STRING(40)
+    END RECORD
+
+    RECORD ERROR_LOG IS
+        LOG_DATE        : DATE
+        REF_TXN_ID      : STRING(16)
+        ACCOUNT_NO      : STRING(12)
+        CODE            : STRING(6)
+        MESSAGE         : STRING(80)
+    END RECORD
+
+    /* ファイル定義（推定: キー/モード） */
+    FILE ACCOUNTS     OF ACCOUNT     KEY ACCOUNT_NO   MODE UPDATE
+    FILE TRANSACTIONS OF TRANSACTION KEY TXN_ID       MODE INPUT
+    FILE GL_BOOK      OF GL_ENTRY    KEY REF_TXN_ID   MODE OUTPUT
+    FILE CONTROLS     OF CONTROL     KEY PARAM_NAME   MODE INPUT
+    FILE ERRLOG       OF ERROR_LOG   KEY REF_TXN_ID   MODE OUTPUT
+
+    /* 補助関数（推定） */
+    FUNCTION DAYS_BETWEEN(D1 : DATE, D2 : DATE) RETURNS INTEGER
+    BEGIN
+        /* 実装依存: ここではダミー */
+        RETURN SYSTEM_DATE_DIFF(D1, D2)
+    END
+
+    FUNCTION TRUNC_2(V : DECIMAL(15,6)) RETURNS DECIMAL(15,2)
+    BEGIN
+        /* 端数処理（小数点以下2位に切り捨て） */
+        RETURN FLOOR(V * 100) / 100
+    END
+
+    FUNCTION ROUND_2(V : DECIMAL(15,6)) RETURNS DECIMAL(15,2)
+    BEGIN
+        RETURN ROUND(V, 2)
+    END
+
+    PROCEDURE WRITE_GL(TXID : STRING(16), DEBIT : STRING(8), CREDIT : STRING(8),
+                       AMT : DECIMAL(15,2), MEMO : STRING(40))
+    VAR L : GL_ENTRY
+    BEGIN
+        L.GL_DATE    = BUSINESS_DATE
+        L.REF_TXN_ID = TXID
+        L.DEBIT_ACCT = DEBIT
+        L.CREDIT_ACCT= CREDIT
+        L.AMOUNT     = AMT
+        L.MEMO       = MEMO
+        WRITE GL_BOOK L
+    END PROCEDURE
+
+    PROCEDURE LOG_ERROR(TXID : STRING(16), ACNO : STRING(12),
+                        CODE : STRING(6), MSG : STRING(80))
+    VAR E : ERROR_LOG
+    BEGIN
+        E.LOG_DATE   = BUSINESS_DATE
+        E.REF_TXN_ID = TXID
+        E.ACCOUNT_NO = ACNO
+        E.CODE       = CODE
+        E.MESSAGE    = MSG
+        WRITE ERRLOG E
+    END PROCEDURE
+
+    PROCEDURE LOAD_PARAMS
+    VAR P : CONTROL
+    BEGIN
+        /* 業務日・金利・限度額・端数処理モードを制御表から取得（簡略） */
+        READ CONTROLS KEY 'BUSINESS_DATE' INTO P
+        BUSINESS_DATE = DATE_FROM_STRING(P.PARAM_VALUE)
+
+        READ CONTROLS KEY 'ANNUAL_RATE' INTO P
+        ANNUAL_RATE = DECIMAL_FROM_STRING(P.PARAM_VALUE) /* 例: "0.0150" */
+
+        READ CONTROLS KEY 'MAX_WITHDRAW_LIMIT' INTO P
+        MAX_WITHDRAW_LIMIT = DECIMAL_FROM_STRING(P.PARAM_VALUE)
+
+        READ CONTROLS KEY 'ROUNDING_MODE' INTO P
+        ROUNDING_MODE = P.PARAM_VALUE
+    END PROCEDURE
+
+    PROCEDURE ACCRUE_INTEREST(VAR A : ACCOUNT)
+    VAR DAYS : INTEGER
+    VAR RAW_INT : DECIMAL(15,6)
+    VAR INT_AMT : DECIMAL(15,2)
+    BEGIN
+        /* 最終計上日から業務日までの日数を算出 */
+        DAYS = DAYS_BETWEEN(A.LAST_INT_DATE, BUSINESS_DATE)
+        IF DAYS <= 0 THEN
+            RETURN
+        ENDIF
+
+        RAW_INT = (A.BALANCE * ANNUAL_RATE * DAYS) / 365
+
+        IF ROUNDING_MODE = 'TRUNC' THEN
+            INT_AMT = TRUNC_2(RAW_INT)
+        ELSE
+            INT_AMT = ROUND_2(RAW_INT)
+        ENDIF
+
+        IF INT_AMT > 0 THEN
+            /* 顧客預金へ付与するシンプルモデル（費用計上を同時仕訳） */
+            A.BALANCE      = A.BALANCE + INT_AMT
+            A.ACCRUED_INT  = A.ACCRUED_INT + INT_AMT
+            A.LAST_INT_DATE= BUSINESS_DATE
+
+            /* 仕訳：利息費用/預金（顧客） */
+            WRITE_GL('INT-' || A.ACCOUNT_NO || '-' || STRING(DAYS),
+                     'INTEXP', 'DEPST', INT_AMT,
+                     'Interest ' || STRING(DAYS) || 'd @ ' || STRING(ANNUAL_RATE))
+        ENDIF
+    END PROCEDURE
+
+    PROCEDURE VALIDATE_TXN(T : TRANSACTION, A : ACCOUNT) RETURNS BOOLEAN
+    BEGIN
+        IF A.STATUS <> 'A' THEN
+            LOG_ERROR(T.TXN_ID, T.ACCOUNT_NO, 'ESTAT', 'ACCOUNT STATUS NOT ACTIVE')
+            RETURN FALSE
+        ENDIF
+        IF T.AMOUNT <= 0 THEN
+            LOG_ERROR(T.TXN_ID, T.ACCOUNT_NO, 'EAMT', 'AMOUNT MUST BE POSITIVE')
+            RETURN FALSE
+        ENDIF
+        IF T.TXN_TYPE = 'WD' THEN
+            IF T.AMOUNT > MAX_WITHDRAW_LIMIT THEN
+                LOG_ERROR(T.TXN_ID, T.ACCOUNT_NO, 'ELIM', 'WITHDRAW OVER LIMIT')
+                RETURN FALSE
+            ENDIF
+            IF T.AMOUNT > A.BALANCE THEN
+                LOG_ERROR(T.TXN_ID, T.ACCOUNT_NO, 'ENOF', 'INSUFFICIENT BALANCE')
+                RETURN FALSE
+            ENDIF
+        ENDIF
+        RETURN TRUE
+    END PROCEDURE
+
+    PROCEDURE APPLY_TXN(VAR A : ACCOUNT, T : TRANSACTION)
+    BEGIN
+        /* 取引反映と仕訳生成 */
+        IF T.TXN_TYPE = 'DP' THEN
+            A.BALANCE = A.BALANCE + T.AMOUNT
+            /* 預入：現金/預金（顧客） */
+            WRITE_GL(T.TXN_ID, 'CASH', 'DEPST', T.AMOUNT, 'DEPOSIT ' || T.ORIGIN_CODE)
+        ELSEIF T.TXN_TYPE = 'WD' THEN
+            A.BALANCE = A.BALANCE - T.AMOUNT
+            /* 払出：預金（顧客）/現金 */
+            WRITE_GL(T.TXN_ID, 'DEPST', 'CASH', T.AMOUNT, 'WITHDRAW ' || T.ORIGIN_CODE)
+        ELSEIF T.TXN_TYPE = 'TR' THEN
+            /* 簡略：同一勘定内の振替（ここでは省略可） */
+            WRITE_GL(T.TXN_ID, 'DEPST', 'DEPST', T.AMOUNT, 'TRANSFER ' || T.REMARK)
+        ELSE
+            LOG_ERROR(T.TXN_ID, T.ACCOUNT_NO, 'ETYPE', 'UNKNOWN TXN TYPE')
+        ENDIF
+    END PROCEDURE
+
+    PROCEDURE PROCESS_ALL
+    VAR T : TRANSACTION
+    VAR A : ACCOUNT
+    VAR CNT_OK : INTEGER
+    VAR CNT_ERR: INTEGER
+    BEGIN
+        CNT_OK  = 0
+        CNT_ERR = 0
+
+        /* 入出金ファイルを業務日で抽出（推定イテレーション） */
+        OPEN TRANSACTIONS
+        OPEN ACCOUNTS
+        OPEN GL_BOOK
+        OPEN ERRLOG
+
+        FOR EACH T IN TRANSACTIONS WHERE T.TXN_DATE = BUSINESS_DATE ORDER BY T.ACCOUNT_NO DO
+            /* 口座読み込み＋ロック（推定） */
+            READ ACCOUNTS KEY T.ACCOUNT_NO INTO A LOCK
+            IF NOT FOUND THEN
+                LOG_ERROR(T.TXN_ID, T.ACCOUNT_NO, 'ENOA', 'ACCOUNT NOT FOUND')
+                CNT_ERR = CNT_ERR + 1
+                CONTINUE
+            ENDIF
+
+            /* 検証 */
+            IF NOT VALIDATE_TXN(T, A) THEN
+                UNLOCK ACCOUNTS KEY T.ACCOUNT_NO
+                CNT_ERR = CNT_ERR + 1
+                CONTINUE
+            ENDIF
+
+            /* 取引反映 */
+            APPLY_TXN(A, T)
+
+            /* 当日利息計上（必要時） */
+            ACCRUE_INTEREST(A)
+
+            /* 口座更新 */
+            WRITE ACCOUNTS A
+
+            UNLOCK ACCOUNTS KEY T.ACCOUNT_NO
+
+            CNT_OK = CNT_OK + 1
+        END FOR
+
+        /* 簡易レポート（ここではログ行として出力） */
+        LOG_ERROR('REPORT', '--------', 'STAT', 'OK=' || STRING(CNT_OK) || ' ERR=' || STRING(CNT_ERR))
+
+        CLOSE TRANSACTIONS
+        CLOSE ACCOUNTS
+        CLOSE GL_BOOK
+        CLOSE ERRLOG
+    END PROCEDURE
+
+    /* メイン */
+    BEGIN
+        LOAD_PARAMS
+        PROCESS_ALL
+    END
+
+END PROGRAM
