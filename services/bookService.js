@@ -32,6 +32,34 @@ exports.updateBook = async (id, data) => {
   return await Book.findByIdAndUpdate(id, data, { new: true, runValidators: true });
 };
 
+exports.patchBook = async (id, data) => {
+  await connectDB();
+  
+  // Validate publishedYear if provided
+  if (data.publishedYear && data.publishedYear > new Date().getFullYear()) {
+    const err = new Error('Published year cannot be in the future.');
+    err.statusCode = 400;
+    throw err;
+  }
+  
+  // Use findByIdAndUpdate with partial data
+  // new: true returns the updated document
+  // runValidators: true ensures schema validation runs on update
+  const book = await Book.findByIdAndUpdate(
+    id, 
+    { $set: data }, 
+    { new: true, runValidators: true }
+  );
+  
+  if (!book) {
+    const err = new Error('Book not found');
+    err.statusCode = 404;
+    throw err;
+  }
+  
+  return book;
+};
+
 exports.deleteBook = async (id) => {
   await connectDB();
   return await Book.findByIdAndDelete(id);
