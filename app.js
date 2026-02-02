@@ -1,8 +1,10 @@
+const authorRoutes = require('./routes/authorRoutes');
 <changes><change><info>Ensure bookRoutes are included in Express app.</info><content>const express = require('express');
 const mongoose = require('mongoose');
 const bookRoutes = require('./routes/bookRoutes');
 const todoRoutes = require('./routes/todoRoutes');
 
+app.use('/authors', authorRoutes);
 const app = express();
 
 app.use(express.json());
