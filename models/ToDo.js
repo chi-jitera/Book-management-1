@@ -4,7 +4,7 @@ const mongoose = require('../config/db');
 const todoSchema = new mongoose.Schema({
     title: { type: String, required: true },
     description: { type: String },
-    dueDate: { type: Date },/*chi added more*/
+    dueDate: { type: Date },/*chi added more fdsafdsa*/
     completed: { type: Boolean, default: false }/*chi has changed one more time*/
 });
 
