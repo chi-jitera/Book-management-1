@@ -50,3 +50,12 @@ exports.deleteBook = async (req, res) => {
         res.status(404).json({ error: error.message });
     }
 };
+
+exports.searchBooks = async (req, res) => {
+    try {
+        const books = await bookService.searchBooks(req.query);
+        res.json(books);
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+};
