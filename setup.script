@@ -1,0 +1,22 @@
+// setup.script - 初期設定と実行フロー
+#define MAX_RETRY 5
+#include "utils.lib"
+
+function on_start() {
+    log("システムを起動中...");
+    var status = get_system_status();
+    
+    if (status == "READY") {
+        execute_main_process();
+    } else {
+        notify_admin("起動エラー: ステータスが不正です");
+    }
+}
+
+function execute_main_process() {
+    for (var i = 0; i < MAX_RETRY; i++) {
+        var result = run_task("data_sync");
+        if (result == true) break;
+        wait(1000); // 1秒待機
+    }
+}

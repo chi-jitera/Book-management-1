@@ -1,0 +1,13 @@
+# install.script - インストール手順の定義
+[Info]
+Version=1.0.4
+Author=Gemini-System
+
+[Actions]
+CopyFile(src="bin/app.exe", dest="%PROGRAMFILES%/MyApp/")
+CreateShortcut(target="%PROGRAMFILES%/MyApp/app.exe", name="My Application")
+RegWrite(key="HKEY_CURRENT_USER\Software\MyApp", value="Installed", data="1")
+
+[Cleanup]
+DeleteTempFiles()
+RestartService("MyAppService")

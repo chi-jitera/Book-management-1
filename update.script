@@ -1,0 +1,11 @@
+# update.script - アップデート用の一時的な実行ファイル
+@echo off
+print "アップデートの確認中..."
+check_version --remote "https://api.example.com/v1"
+
+# 条件が合えばダウンロードを実行
+download_blob "update_package.tar.gz" --output "/tmp/update"
+extract "/tmp/update/package.tar.gz" --to "/usr/local/bin"
+
+print "アップデートが完了しました。再起動してください。"
+exit 0

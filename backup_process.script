@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Workflow name="DailyBackupSystem" version="2.1">
+    <Variables>
+        <Variable name="SourceDir">C:\AppData\Logs</Variable>
+        <Variable name="BackupDir">D:\Backups\Daily</Variable>
+        <Variable name="RetentionDays">30</Variable>
+    </Variables>
+
+    <Initialize>
+        <Action type="CheckDirectory" path="${SourceDir}" createIfMissing="false" />
+        <Action type="CheckDirectory" path="${BackupDir}" createIfMissing="true" />
+        <Action type="Log" level="Info">初期化が完了しました。バックアップを開始します。</Action>
+    </Initialize>
+
+    <Tasks>
+        <If condition="FileCount(${SourceDir}) > 0">
+            <Then>
+                <ForEach item="file" collection="GetFiles(${SourceDir}, '*.log')">
+                    <Task name="CompressAndMove">
+                        <Parameter name="InputFile">${file}</Parameter>
+                        <Parameter name="OutputFormat">ZIP</Parameter>
+                        <Parameter name="Destination">${BackupDir}</Parameter>
+                        <OnSuccess>
+                            <Action type="DeleteOriginal" />
+                        </OnSuccess>
+                        <OnError action="Continue">
+                            <Action type="Log" level="Error">ファイル ${file} の処理中にエラーが発生しました。</Action>
+                        </OnError>
+                    </Task>
+                </ForEach>
+            </Then>
+            <Else>
+                <Action type="Log" level="Warning">対象ファイルが見つかりませんでした。処理をスキップします。</Action>
+            </Else>
+        </If>
+
+        <Task name="Cleanup">
+            <Action type="DeleteOldFiles" path="${BackupDir}">
+                <Condition property="AgeInDays" operator="GreaterThan" value="${RetentionDays}" />
+            </Action>
+        </Task>
+    </Tasks>
+
+    <Finalize>
+        <Action type="SendEmail">
+            <To>admin@example.com</To>
+            <Subject>バックアップ完了通知</Subject>
+            <Body>本日のバックアップ処理が成功しました。詳細はログを確認してください。</Body>
+        </Action>
+    </Finalize>
+</Workflow>
