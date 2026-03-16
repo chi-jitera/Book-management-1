@@ -1,0 +1,17 @@
+*------------------------------------------------------------*
+* MACRO-NAME: GEN-DB-READ
+* USAGE: %GEN-DB-READ(TABLE-NAME, KEY-VALUE)
+*------------------------------------------------------------*
+%MACRO GEN-DB-READ(&TBL, &KEY)          <-- マクロの開始と引数定義
+      * DB READ START FOR &TBL
+           MOVE &KEY TO &TBL-KEY.
+           EXEC SQL
+               SELECT * FROM &TBL
+               WHERE KEY = :&TBL-KEY
+           END-EXEC.
+
+           IF SQLCODE NOT = 0
+               DISPLAY "ERROR READING &TBL : " SQLCODE
+               PERFORM ABEND-RTN
+           END-IF.
+%MEND                                   <-- マクロの終了
