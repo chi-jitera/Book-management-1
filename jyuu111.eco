@@ -1,0 +1,1556 @@
+      *****************************************************************
+      *                                                               *
+      *  PROGRAM ID      :   JYUU111                                  *
+      *                                                               *
+      *  PROGRAM NAME    :   商品管理Ｍの追加更新処理                 *
+      *                                                               *
+      *  処理概要        :   商品管理Ｍの追加更新処理を行う           *
+      *                                                               *
+      *  Written By      :   HEK                                    *
+
+      *                                                               *
+      *  DATE            :   1997/10/07                               *
+      *  UPDATE : 2002/10/07 初期ｸﾘｱ時にﾛﾝｸﾞﾄﾗﾝｻﾞｸｼｮﾝで落ちる為変更   *
+      *  UPDATE : 2003/06/20 得意先cd&仕入先cdの判定を6から99へ変更   *
+      *                                                               *
+      *    Copyright (C) 1997. HielecomKowa,Ltd. All Right Reserved   *
+      *                                                               *
+      *  開発メモ　　　　：                                           *
+      *                                                               *
+      *****************************************************************
+       IDENTIFICATION         DIVISION.
+       PROGRAM-ID. JYUU111.
+      *   1.0  準備処理
+      *   2.0  業務処理
+      *   3.0  終了処理
+      *
+       ENVIRONMENT            DIVISION.
+       DATA                   DIVISION.
+       WORKING-STORAGE        SECTION.
+
+      *****************************************************************
+      *  ホスト変数定義                                               *
+      *****************************************************************
+       EXEC SQL BEGIN DECLARE SECTION END-EXEC
+
+      ******************************************************************
+      *  ＳＱＬ関数用変数定義   　　　                                 *
+      ******************************************************************
+       EXEC SQL INCLUDE
+         SQL-WRK.cbl
+       END-EXEC.
+
+      *****************************************************************
+      *  年月獲得用データ領域                                         *
+      *****************************************************************
+       77 JDATE                     PIC S9(9) COMP-5.
+       77 FMT                       PIC X(10) VALUE "yyyy dd mm".
+       77 FMT-LEN                   PIC S9(9) COMP-5 VALUE 10.
+       77 SDATE                     PIC X(10).
+       77 SDATE-LEN                 PIC S9(9) COMP-5 VALUE 10.
+       77 STAT-CODE                 PIC S9(9) COMP-5.
+       77 WK-SHOHIN                 PIC S9(9).
+
+       01 MQ-MSG-ZYU.
+      *****************************************************************
+      *   受注ｄ用データ領域
+      *****************************************************************
+       EXEC SQL INCLUDE
+         DB-ZYUTYU.cbl
+       END-EXEC
+
+       01 MQ-MSG-HAC.
+      *****************************************************************
+      *   発注ｄ用データ領域
+      *****************************************************************
+       EXEC SQL INCLUDE
+         DB-HACHUD.cbl
+       END-EXEC
+
+       01 SQL-SHOKNR-M.
+      *****************************************************************
+      * 商品管理Ｍ用データ領域                                        *
+      *****************************************************************
+       EXEC SQL INCLUDE
+         DB-SYOKNR-M.cbl
+       END-EXEC
+
+       01 SQL-SHOKNR-M-B.
+      *****************************************************************
+      * 商品管理Ｍ用データ領域                                        *
+      *****************************************************************
+       EXEC SQL INCLUDE
+         DB-SYOKNR-M.cbl
+       END-EXEC
+
+       01 SQL-SHOHIN-M.
+      *****************************************************************
+      * 商品Ｍ用データ領域                                            *
+      *****************************************************************
+       EXEC SQL INCLUDE
+         DB-SHOHIN-NSYNC.cbl
+       END-EXEC
+
+       01 SQL-BUHIN-KO.
+      *****************************************************************
+      * 部品展開Ｍ用データ領域                                        *
+      *****************************************************************
+       EXEC SQL INCLUDE
+         DB-BUHIN-M.cbl
+       END-EXEC
+
+       01 SQL-BUHIN-MAGO.
+      *****************************************************************
+      * 部品展開Ｍ用データ領域                                        *
+      *****************************************************************
+       EXEC SQL INCLUDE
+         DB-BUHIN-M.cbl
+       END-EXEC
+
+       01 SQL-TNTSYA-MOCI.
+      *****************************************************************
+      * 担当者持ち出し用データ領域                                    *
+      *****************************************************************
+       EXEC SQL INCLUDE
+         DB-TNTSHA-MOCI-SYNC.cbl
+       END-EXEC
+
+       01 SQL-TANTO-M.
+      *****************************************************************
+      * 担当者Ｍ用データ領域                                          *
+      *****************************************************************
+       EXEC SQL INCLUDE
+         DB-TANTOU-M.cbl
+       END-EXEC
+
+       01 SQL-TOKUISAKI-AZK.
+      *****************************************************************
+      * 得意先預け用データ領域                                        *
+      *****************************************************************
+       EXEC SQL INCLUDE
+         DB-TOKUISAKI-AZK.cbl
+       END-EXEC
+
+       01 SQL-SIRESAKI-AZK.
+      *****************************************************************
+      * 仕入先預け用データ領域                                        *
+      *****************************************************************
+       EXEC SQL INCLUDE
+         DB-SIRAZKM.cbl
+       END-EXEC
+
+      *****************************************************************
+      * その他ワーク用データ領域                                      *
+      *****************************************************************
+       01 W-DATE.
+          10 W-YYYY                  PIC 9(4).
+          10 FILLER                  PIC X(1).
+          10 W-DD                    PIC 9(2).
+          10 FILLER                  PIC X(1).
+          10 W-MM                    PIC 9(2).
+          10 FILLER                  PIC X(10).
+       01 WK-DATE                    PIC 9(9).
+       01 W-SHOHIN-CD                PIC 9(9).
+       01 W-SHOHIN-CD-KO             PIC 9(9).
+       01 W-SHOHIN-CD-MAGO           PIC 9(9).
+       01 W-SIR-CD                   PIC 9(9).
+       01 W-TOKUI-CD                 PIC 9(9).
+       01 W-BUHIN-SU                 PIC 9(9).
+       01 BUHIN-CNT                  PIC 9(9).
+       01 KO-URI-SU                  PIC 9(9).
+       01 MAGO-URI-SU                PIC 9(9).
+       01 W-URI-SU                   PIC 9(9).
+       01 WK-ZYUT-SU-KO              PIC S9(9).
+       01 WK-ZYUT-SU-MAGO            PIC S9(9).
+       01 connect-db-name            PIC X(20)  VALUE ALL SPACE.
+       EXEC SQL END DECLARE SECTION END-EXEC
+
+      *****************************************************************
+      *      ＡＣＣＥＰＴ　ＷＯＲＫ
+       01 AX-DATE                    PIC 9(6).
+       01 AX-DATE-R        REDEFINES AX-DATE.
+          03 AX-YYYY                 PIC 9(2).
+          03 AX-MM                   PIC 9(2).
+          03 AX-DD                   PIC 9(2).
+       01 AX-TIME                    PIC 9(8).
+       01 AX-TIME-R        REDEFINES AX-TIME.
+          03 AX-HH                   PIC 9(2).
+          03 AX-MI                   PIC 9(2).
+          03 AX-SS                   PIC 9(2).
+          03 AX-SS2                  PIC 9(2).
+       01 CHK-BUHINM-FLG             PIC 9(1)  VALUE 0.
+       01 END-FLG                    PIC 9(1)  VALUE 0.
+       01 END-FLG1                   PIC 9(1)  VALUE 0.
+       01 END-FLG2                   PIC 9(1)  VALUE 0.
+       01 OYA-URI-SU                 PIC 9(9).
+       01 OYA-CD                     PIC 9(1).
+       01 SYORI-NASI-FLG             PIC 9(1)  VALUE 0.
+       01 KO-SQLCODE                 PIC 9(4).
+       01 MAGO-SQLCODE               PIC 9(4).
+      *****************************************************************
+      *  エラー／モニター メッセージ ヘッダー                         *
+      *****************************************************************
+       01 DISP-HEADER.
+          02 PGM-NAME                PIC X(07)  VALUE 'JYUU111'.
+          02 FILLER                  PIC X(01)  VALUE ':'.
+       COPY DCLOG.
+       01 display-number-9           PIC S9(9) USAGE DISPLAY.
+       01 display-number-4           PIC S9(4) USAGE DISPLAY.
+
+      *****************************************************************
+      ***   SQLCA　定義                                               *
+      *****************************************************************
+       EXEC SQL INCLUDE SQLCA END-EXEC
+      *****************************************************************
+      ***   SQL エラー情報                                            *
+      *****************************************************************
+       01  SQL-ERR-DISP            PIC  X(080)  VALUE  ALL SPACE.
+       01  SQL-CODE-DISP           PIC  S9(9)   VALUE  ZERO.
+       01  SQL-ERRD-DISP           PIC  S9(9)   VALUE  ZERO.
+      *****************************************************************
+
+       01 MQ-MSG-SHOKNR-M.
+      *****************************************************************
+      * 商品管理Ｍ用データ領域                                        *
+      *****************************************************************
+             COPY DB-SYOKNR-M.
+
+      *  メッセージデータ
+
+       77  DATA-TYPE                PIC  X(18).
+       77  UPD-TYPE                 PIC  X(1).
+       77  SITE-TYPE                PIC  X(1).
+
+      ***
+       PROCEDURE              DIVISION.
+
+      *****************************************************************
+      *  0.0                                                          *
+      *            メイン                                             *
+      *                                                               *
+      *****************************************************************
+       MAIN-PROC              SECTION.
+       000.
+           PERFORM  INIT-PROC
+           PERFORM  SHORI-PROC
+           PERFORM  END-PROC
+           CONTINUE.
+       999.
+           STOP RUN.
+      *****************************************************************
+      *  1.0                                                          *
+      *            準備処理                                           *
+      *                                                               *
+      *****************************************************************
+       INIT-PROC              SECTION.
+       000.
+           EXEC SQL
+              WHENEVER SQLERROR PERFORM SQL-ERROR
+           END-EXEC
+           display 'DB_NAME'     upon ENVIRONMENT-NAME.
+           accept  connect-db-name from ENVIRONMENT-VALUE.
+           move 'DATABASE' to sql-nm.
+           EXEC SQL
+              DATABASE :connect-db-name
+           END-EXEC.
+
+           move 'SET ISOLATION' to sql-nm.
+           EXEC SQL
+              SET ISOLATION TO COMMITTED READ
+           END-EXEC.
+
+           move 'SET LOCK MODE' to sql-nm.
+           EXEC SQL
+              SET LOCK MODE TO WAIT
+           END-EXEC.
+
+           move 'BEGIN WORK' to sql-nm.
+           EXEC SQL
+              BEGIN WORK
+           END-EXEC.
+
+           COMPUTE CALL-STATUS = 0
+           MOVE 0 TO SYORI-NASI-FLG
+           MOVE 0 TO  SHOKNR-M OF SQL-SHOKNR-M
+           INITIALIZE SHOKNR-M OF SQL-SHOKNR-M
+           COPY TP1-DISP.
+                   DISP-HEADER, ' 処理スタート '
+           COPY END-TP1-DISP.
+           CONTINUE.
+       999.
+           EXIT.
+      *****************************************************************
+      *  2.0                                                          *
+      *            業務処理                                           *
+      *                                                               *
+      *****************************************************************
+       SHORI-PROC             SECTION.
+       000.
+      * 2002/10/07 初期ｸﾘｱ時にﾛﾝｸﾞﾄﾗﾝｻﾞｸｼｮﾝで落ちる為変更
+      *  1 本社分
+                 EXEC SQL
+                   UPDATE 商品管理m
+                    SET  (
+                          受注残,
+                          親受注残,
+                          店間受注残,
+                          発注残,
+                          店間発注残,
+                          仕入先預け発注残,
+                          持ち出し数,
+                          得意先預け数,
+                          仕入先預け数
+                           )
+                      =  (0,0,0,0,0,0,0,0,0)
+                    WHERE  保有店cd  =  1
+                 END-EXEC
+                 EXEC SQL
+                   COMMIT WORK
+                 END-EXEC
+                 EXEC SQL
+                   BEGIN WORK
+                 END-EXEC
+           COPY TP1-DISP.
+                   DISP-HEADER, ' 商品管理m ｸﾘｱ1END '
+           COPY END-TP1-DISP.
+
+      *  本社分以外
+                 EXEC SQL
+                   UPDATE 商品管理m
+                    SET  (
+                          受注残,
+                          親受注残,
+                          店間受注残,
+                          発注残,
+                          店間発注残,
+                          仕入先預け発注残,
+                          持ち出し数,
+                          得意先預け数,
+                          仕入先預け数
+                           )
+                      =  (0,0,0,0,0,0,0,0,0)
+                    WHERE  保有店cd  !=  1
+                 END-EXEC
+                 EXEC SQL
+                   COMMIT WORK
+                 END-EXEC
+                 EXEC SQL
+                   BEGIN WORK
+                 END-EXEC
+           COPY TP1-DISP.
+                   DISP-HEADER, ' 商品管理m ｸﾘｱ2END '
+           COPY END-TP1-DISP.
+
+      *       WHEN "担当者持ち出し"
+                 MOVE 0 TO END-FLG
+                 EXEC SQL
+                   DECLARE CURS_TNT CURSOR FOR
+                     SELECT 担当者.店CD,
+                            担当者持ちだしf.商品CD,
+                            sum(担当者持ちだしf.持ち出し数),
+                            sum(担当者持ちだしf.持ち帰り数),
+                            sum(担当者持ちだしf.売上数)
+                      FROM  担当者持出m 担当者持ちだしf,
+                            担当者m 担当者
+                      WHERE 担当者.担当者CD = 担当者持ちだしf.担当者CD
+                      GROUP BY 担当者持ちだしf.商品cd, 担当者.店CD
+                      ORDER BY 担当者持ちだしf.商品cd, 担当者.店CD
+                 END-EXEC
+
+                 EXEC SQL
+                   OPEN CURS_TNT
+                 END-EXEC
+
+                 EXEC SQL
+                   FETCH CURS_TNT
+                    INTO :mise-cd OF SQL-TANTO-M,
+                         :syohin-cd OF tnt-moci-m OF SQL-TNTSYA-MOCI,
+                         :moci-su OF tnt-moci-m OF SQL-TNTSYA-MOCI,
+                         :moci-bac-su OF tnt-moci-m OF SQL-TNTSYA-MOCI,
+                         :uri-su OF tnt-moci-m OF SQL-TNTSYA-MOCI
+                 END-EXEC
+                 IF SQLCODE <> 0
+                   MOVE 1 TO END-FLG
+                 END-IF
+                 MOVE syohin-cd OF tnt-moci-m OF SQL-TNTSYA-MOCI
+                   TO WK-SHOHIN
+                 PERFORM UNTIL END-FLG = 1
+                       IF syohin-cd OF tnt-moci-m OF SQL-TNTSYA-MOCI
+                          <> WK-SHOHIN
+                         MOVE syohin-cd OF tnt-moci-m OF SQL-TNTSYA-MOCI
+                           TO WK-SHOHIN
+                       END-IF
+              MOVE  0
+                  TO YOTE-YY        OF SHOKNR-M OF SQL-SHOKNR-M
+                     YOTE-MM        OF SHOKNR-M OF SQL-SHOKNR-M
+                     YOTE-DD        OF SHOKNR-M OF SQL-SHOKNR-M
+                     SIR-YY         OF SHOKNR-M OF SQL-SHOKNR-M
+                     SIR-MM         OF SHOKNR-M OF SQL-SHOKNR-M
+                     SIR-DD         OF SHOKNR-M OF SQL-SHOKNR-M
+                     FSIR-NEN       OF SHOKNR-M OF SQL-SHOKNR-M
+                     FSIR-TUKI      OF SHOKNR-M OF SQL-SHOKNR-M
+                     FSIR-HI        OF SHOKNR-M OF SQL-SHOKNR-M
+                     LAST-SIR-TANKA OF SHOKNR-M OF SQL-SHOKNR-M
+                     OYA-JUCHU-ZAN  OF SHOKNR-M OF SQL-SHOKNR-M
+                     HACHU-ZAN      OF SHOKNR-M OF SQL-SHOKNR-M
+                     MISE-HACHU-ZAN OF SHOKNR-M OF SQL-SHOKNR-M
+                     MOTIDASI-SU    OF SHOKNR-M OF SQL-SHOKNR-M
+                     S-SAKI-AZKSU   OF SHOKNR-M OF SQL-SHOKNR-M
+                     S-SAKI-AZK-ZAN OF SHOKNR-M OF SQL-SHOKNR-M
+                     T-SAKI-AZKSU   OF SHOKNR-M OF SQL-SHOKNR-M
+                     B-ZAIKOSU      OF SHOKNR-M OF SQL-SHOKNR-M
+                       MOVE syohin-cd OF tnt-moci-m OF SQL-TNTSYA-MOCI
+                           to W-SHOHIN-CD
+                              SHOHIN-CD OF SHOKNR-M OF SQL-SHOKNR-M
+                       MOVE mise-cd OF SQL-TANTO-M
+                           TO HOTEN-CD OF SHOKNR-M OF SQL-SHOKNR-M
+                       PERFORM SELECT-SHOKNRM
+                       COMPUTE MOTIDASI-SU OF SHOKNR-M OF SQL-SHOKNR-M
+                         =     moci-su OF tnt-moci-m OF SQL-TNTSYA-MOCI
+                         - moci-bac-su OF tnt-moci-m OF SQL-TNTSYA-MOCI
+                             - uri-su OF tnt-moci-m OF SQL-TNTSYA-MOCI
+                       PERFORM UPDATE-TABLE-MAIN
+                       PERFORM SELECT-SHOHIN-M
+      *****************************************************************
+      *   商品ｍを検索し、商品雑親ｺｰﾄﾞが０以外のときは、
+      *   雑親ｺｰﾄﾞのレコードも更新する
+      *****************************************************************
+                       IF Z-OYA-CD OF SHOHIN-M
+                              OF SQL-SHOHIN-M NOT = 0 THEN
+              MOVE  0
+                  TO YOTE-YY        OF SHOKNR-M OF SQL-SHOKNR-M
+                     YOTE-MM        OF SHOKNR-M OF SQL-SHOKNR-M
+                     YOTE-DD        OF SHOKNR-M OF SQL-SHOKNR-M
+                     SIR-YY         OF SHOKNR-M OF SQL-SHOKNR-M
+                     SIR-MM         OF SHOKNR-M OF SQL-SHOKNR-M
+                     SIR-DD         OF SHOKNR-M OF SQL-SHOKNR-M
+                     FSIR-NEN       OF SHOKNR-M OF SQL-SHOKNR-M
+                     FSIR-TUKI      OF SHOKNR-M OF SQL-SHOKNR-M
+                     FSIR-HI        OF SHOKNR-M OF SQL-SHOKNR-M
+                     LAST-SIR-TANKA OF SHOKNR-M OF SQL-SHOKNR-M
+                     OYA-JUCHU-ZAN  OF SHOKNR-M OF SQL-SHOKNR-M
+                     HACHU-ZAN      OF SHOKNR-M OF SQL-SHOKNR-M
+                     MISE-HACHU-ZAN OF SHOKNR-M OF SQL-SHOKNR-M
+                     MOTIDASI-SU    OF SHOKNR-M OF SQL-SHOKNR-M
+                     S-SAKI-AZKSU   OF SHOKNR-M OF SQL-SHOKNR-M
+                     S-SAKI-AZK-ZAN OF SHOKNR-M OF SQL-SHOKNR-M
+                     T-SAKI-AZKSU   OF SHOKNR-M OF SQL-SHOKNR-M
+                     B-ZAIKOSU      OF SHOKNR-M OF SQL-SHOKNR-M
+                          MOVE Z-OYA-CD OF SHOHIN-M OF SQL-SHOHIN-M
+                              TO SHOHIN-CD OF SHOKNR-M OF SQL-SHOKNR-M
+                                 W-SHOHIN-CD
+                          MOVE mise-cd OF SQL-TANTO-M
+                              TO HOTEN-CD OF SHOKNR-M OF SQL-SHOKNR-M
+                          PERFORM SELECT-SHOKNRM
+      *****************************************************************
+      * 1999/11/10       =     moci-su OF tnt-moci-m OF SQL-TNTSYA-MOCI
+                        COMPUTE MOTIDASI-SU OF SHOKNR-M OF SQL-SHOKNR-M
+                         =      MOTIDASI-SU OF SHOKNR-M OF SQL-SHOKNR-M
+                         +     moci-su OF tnt-moci-m OF SQL-TNTSYA-MOCI
+                         - moci-bac-su OF tnt-moci-m OF SQL-TNTSYA-MOCI
+                             - uri-su OF tnt-moci-m OF SQL-TNTSYA-MOCI
+                       PERFORM UPDATE-TABLE-MAIN
+                       END-IF
+                    EXEC SQL
+                   FETCH CURS_TNT
+                    INTO :mise-cd OF SQL-TANTO-M,
+                         :syohin-cd OF tnt-moci-m OF SQL-TNTSYA-MOCI,
+                         :moci-su OF tnt-moci-m OF SQL-TNTSYA-MOCI,
+                         :moci-bac-su OF tnt-moci-m OF SQL-TNTSYA-MOCI,
+                         :uri-su OF tnt-moci-m OF SQL-TNTSYA-MOCI
+                    END-EXEC
+                    IF SQLCODE <> 0
+                      MOVE 1 TO END-FLG
+                    END-IF
+                 END-PERFORM
+                 EXEC SQL
+                   COMMIT WORK
+                 END-EXEC
+                 EXEC SQL
+                   BEGIN WORK
+                 END-EXEC
+           COPY TP1-DISP.
+                   DISP-HEADER, ' 担当者持ち出しEND '
+           COPY END-TP1-DISP.
+
+      *       WHEN "仕入先預け"
+                 MOVE 0 TO END-FLG
+                 EXEC SQL
+                   DECLARE CURS_SIR CURSOR FOR
+                     SELECT 入力店CD,
+                            商品CD,
+                            sum(預け数),
+                            sum(引き取り数)
+                      FROM  仕入先預けm
+                      GROUP BY 商品CD, 入力店CD
+                      ORDER BY 商品CD, 入力店CD
+                 END-EXEC
+
+                 EXEC SQL
+                   OPEN CURS_SIR
+                 END-EXEC
+
+                 EXEC SQL
+                   FETCH CURS_SIR
+                   INTO :in-mise-cd OF sire-azuke-m OF SQL-SIRESAKI-AZK,
+                        :syohin-cd OF sire-azuke-m OF SQL-SIRESAKI-AZK,
+                        :azuke-su OF sire-azuke-m OF SQL-SIRESAKI-AZK,
+                        :hikitori-su OF sire-azuke-m OF SQL-SIRESAKI-AZK
+                 END-EXEC
+                 IF SQLCODE <> 0
+                   MOVE 1 TO END-FLG
+                 END-IF
+                 MOVE syohin-cd OF sire-azuke-m OF SQL-SIRESAKI-AZK
+                   TO WK-SHOHIN
+                 PERFORM UNTIL END-FLG = 1
+                       IF syohin-cd OF sire-azuke-m OF SQL-SIRESAKI-AZK
+                          <> WK-SHOHIN
+                     MOVE syohin-cd OF sire-azuke-m OF SQL-SIRESAKI-AZK
+                           TO WK-SHOHIN
+                       END-IF
+              MOVE  0
+                  TO YOTE-YY        OF SHOKNR-M OF SQL-SHOKNR-M
+                     YOTE-MM        OF SHOKNR-M OF SQL-SHOKNR-M
+                     YOTE-DD        OF SHOKNR-M OF SQL-SHOKNR-M
+                     SIR-YY         OF SHOKNR-M OF SQL-SHOKNR-M
+                     SIR-MM         OF SHOKNR-M OF SQL-SHOKNR-M
+                     SIR-DD         OF SHOKNR-M OF SQL-SHOKNR-M
+                     FSIR-NEN       OF SHOKNR-M OF SQL-SHOKNR-M
+                     FSIR-TUKI      OF SHOKNR-M OF SQL-SHOKNR-M
+                     FSIR-HI        OF SHOKNR-M OF SQL-SHOKNR-M
+                     LAST-SIR-TANKA OF SHOKNR-M OF SQL-SHOKNR-M
+                     OYA-JUCHU-ZAN  OF SHOKNR-M OF SQL-SHOKNR-M
+                     HACHU-ZAN      OF SHOKNR-M OF SQL-SHOKNR-M
+                     MISE-HACHU-ZAN OF SHOKNR-M OF SQL-SHOKNR-M
+                     MOTIDASI-SU    OF SHOKNR-M OF SQL-SHOKNR-M
+                     S-SAKI-AZKSU   OF SHOKNR-M OF SQL-SHOKNR-M
+                     S-SAKI-AZK-ZAN OF SHOKNR-M OF SQL-SHOKNR-M
+                     T-SAKI-AZKSU   OF SHOKNR-M OF SQL-SHOKNR-M
+                     B-ZAIKOSU      OF SHOKNR-M OF SQL-SHOKNR-M
+                     MOVE syohin-cd OF sire-azuke-m OF SQL-SIRESAKI-AZK
+                           to W-SHOHIN-CD
+                              SHOHIN-CD OF SHOKNR-M OF SQL-SHOKNR-M
+                     MOVE in-mise-cd OF sire-azuke-m OF SQL-SIRESAKI-AZK
+                           TO HOTEN-CD OF SHOKNR-M OF SQL-SHOKNR-M
+                       PERFORM SELECT-SHOKNRM
+                       COMPUTE S-SAKI-AZKSU OF SHOKNR-M OF SQL-SHOKNR-M
+                       = azuke-su OF sire-azuke-m OF SQL-SIRESAKI-AZK
+                       - hikitori-su OF sire-azuke-m OF SQL-SIRESAKI-AZK
+                       PERFORM UPDATE-TABLE-MAIN
+                       PERFORM SELECT-SHOHIN-M
+      *****************************************************************
+      *   商品ｍを検索し、商品雑親ｺｰﾄﾞが０以外のときは、
+      *   雑親ｺｰﾄﾞのレコードも更新する
+      *****************************************************************
+                       IF Z-OYA-CD OF SHOHIN-M
+                              OF SQL-SHOHIN-M NOT = 0 THEN
+              MOVE  0
+                  TO YOTE-YY        OF SHOKNR-M OF SQL-SHOKNR-M
+                     YOTE-MM        OF SHOKNR-M OF SQL-SHOKNR-M
+                     YOTE-DD        OF SHOKNR-M OF SQL-SHOKNR-M
+                     SIR-YY         OF SHOKNR-M OF SQL-SHOKNR-M
+                     SIR-MM         OF SHOKNR-M OF SQL-SHOKNR-M
+                     SIR-DD         OF SHOKNR-M OF SQL-SHOKNR-M
+                     FSIR-NEN       OF SHOKNR-M OF SQL-SHOKNR-M
+                     FSIR-TUKI      OF SHOKNR-M OF SQL-SHOKNR-M
+                     FSIR-HI        OF SHOKNR-M OF SQL-SHOKNR-M
+                     LAST-SIR-TANKA OF SHOKNR-M OF SQL-SHOKNR-M
+                     OYA-JUCHU-ZAN  OF SHOKNR-M OF SQL-SHOKNR-M
+                     HACHU-ZAN      OF SHOKNR-M OF SQL-SHOKNR-M
+                     MISE-HACHU-ZAN OF SHOKNR-M OF SQL-SHOKNR-M
+                     MOTIDASI-SU    OF SHOKNR-M OF SQL-SHOKNR-M
+                     S-SAKI-AZKSU   OF SHOKNR-M OF SQL-SHOKNR-M
+                     S-SAKI-AZK-ZAN OF SHOKNR-M OF SQL-SHOKNR-M
+                     T-SAKI-AZKSU   OF SHOKNR-M OF SQL-SHOKNR-M
+                     B-ZAIKOSU      OF SHOKNR-M OF SQL-SHOKNR-M
+                          MOVE Z-OYA-CD OF SHOHIN-M OF SQL-SHOHIN-M
+                              TO SHOHIN-CD OF SHOKNR-M OF SQL-SHOKNR-M
+                                 W-SHOHIN-CD
+                     MOVE in-mise-cd OF sire-azuke-m OF SQL-SIRESAKI-AZK
+                           TO HOTEN-CD OF SHOKNR-M OF SQL-SHOKNR-M
+                          PERFORM SELECT-SHOKNRM
+      *****************************************************************
+      * 1999/11/10     = azuke-su OF sire-azuke-m OF SQL-SIRESAKI-AZK
+                       COMPUTE S-SAKI-AZKSU OF SHOKNR-M OF SQL-SHOKNR-M
+                       =       S-SAKI-AZKSU OF SHOKNR-M OF SQL-SHOKNR-M
+                       + azuke-su OF sire-azuke-m OF SQL-SIRESAKI-AZK
+                       - hikitori-su OF sire-azuke-m OF SQL-SIRESAKI-AZK
+      *****************************************************************
+      * 1999/11/10       =     moci-su OF tnt-moci-m OF SQL-TNTSYA-MOCI
+                        COMPUTE MOTIDASI-SU OF SHOKNR-M OF SQL-SHOKNR-M
+                         =      MOTIDASI-SU OF SHOKNR-M OF SQL-SHOKNR-M
+                         +     moci-su OF tnt-moci-m OF SQL-TNTSYA-MOCI
+                         - moci-bac-su OF tnt-moci-m OF SQL-TNTSYA-MOCI
+                             - uri-su OF tnt-moci-m OF SQL-TNTSYA-MOCI
+                       PERFORM UPDATE-TABLE-MAIN
+                       END-IF
+                    EXEC SQL
+                   FETCH CURS_SIR
+                   INTO :in-mise-cd OF sire-azuke-m OF SQL-SIRESAKI-AZK,
+                        :syohin-cd OF sire-azuke-m OF SQL-SIRESAKI-AZK,
+                        :azuke-su OF sire-azuke-m OF SQL-SIRESAKI-AZK,
+                        :hikitori-su OF sire-azuke-m OF SQL-SIRESAKI-AZK
+                    END-EXEC
+                    IF SQLCODE <> 0
+                      MOVE 1 TO END-FLG
+                    END-IF
+                 END-PERFORM
+                 EXEC SQL
+                   COMMIT WORK
+                 END-EXEC
+                 EXEC SQL
+                   BEGIN WORK
+                 END-EXEC
+           COPY TP1-DISP.
+                   DISP-HEADER, ' 仕入先預けEND '
+           COPY END-TP1-DISP.
+
+      *       WHEN "得意先預け"
+                 MOVE 0 TO END-FLG
+                 EXEC SQL
+                   DECLARE CURS_TOK CURSOR FOR
+                     SELECT b.担当店CD,
+                            a.商品CD,
+                            sum(a.預け数),
+                            sum(a.引き取り数),
+                            sum(a.売上数)
+                      FROM  得意先預けm a,
+                            得意先m     b
+                     WHERE  b.得意先cd = a.得意先cd
+                      GROUP BY a.商品CD, b.担当店CD
+                      ORDER BY a.商品CD, b.担当店CD
+                 END-EXEC
+
+                 EXEC SQL
+                   OPEN CURS_TOK
+                 END-EXEC
+
+                 EXEC SQL
+                   FETCH CURS_TOK
+                    INTO :mise-cd OF SQL-TANTO-M,
+                         :syohin-cd OF tnt-moci-m OF SQL-TNTSYA-MOCI,
+                         :moci-su OF tnt-moci-m OF SQL-TNTSYA-MOCI,
+                         :moci-bac-su OF tnt-moci-m OF SQL-TNTSYA-MOCI,
+                         :uri-su OF tnt-moci-m OF SQL-TNTSYA-MOCI
+                 END-EXEC
+                 IF SQLCODE <> 0
+                   MOVE 1 TO END-FLG
+                 END-IF
+                 MOVE syohin-cd OF tnt-moci-m OF SQL-TNTSYA-MOCI
+                   TO WK-SHOHIN
+                 PERFORM UNTIL END-FLG = 1
+                       IF syohin-cd OF tnt-moci-m OF SQL-TNTSYA-MOCI
+                          <> WK-SHOHIN
+                         MOVE syohin-cd OF tnt-moci-m OF SQL-TNTSYA-MOCI
+                           TO WK-SHOHIN
+                       END-IF
+              MOVE  0
+                  TO YOTE-YY        OF SHOKNR-M OF SQL-SHOKNR-M
+                     YOTE-MM        OF SHOKNR-M OF SQL-SHOKNR-M
+                     YOTE-DD        OF SHOKNR-M OF SQL-SHOKNR-M
+                     SIR-YY         OF SHOKNR-M OF SQL-SHOKNR-M
+                     SIR-MM         OF SHOKNR-M OF SQL-SHOKNR-M
+                     SIR-DD         OF SHOKNR-M OF SQL-SHOKNR-M
+                     FSIR-NEN       OF SHOKNR-M OF SQL-SHOKNR-M
+                     FSIR-TUKI      OF SHOKNR-M OF SQL-SHOKNR-M
+                     FSIR-HI        OF SHOKNR-M OF SQL-SHOKNR-M
+                     LAST-SIR-TANKA OF SHOKNR-M OF SQL-SHOKNR-M
+                     OYA-JUCHU-ZAN  OF SHOKNR-M OF SQL-SHOKNR-M
+                     HACHU-ZAN      OF SHOKNR-M OF SQL-SHOKNR-M
+                     MISE-HACHU-ZAN OF SHOKNR-M OF SQL-SHOKNR-M
+                     MOTIDASI-SU    OF SHOKNR-M OF SQL-SHOKNR-M
+                     S-SAKI-AZKSU   OF SHOKNR-M OF SQL-SHOKNR-M
+                     S-SAKI-AZK-ZAN OF SHOKNR-M OF SQL-SHOKNR-M
+                     T-SAKI-AZKSU   OF SHOKNR-M OF SQL-SHOKNR-M
+                     B-ZAIKOSU      OF SHOKNR-M OF SQL-SHOKNR-M
+                       MOVE syohin-cd OF tnt-moci-m OF SQL-TNTSYA-MOCI
+                           to W-SHOHIN-CD
+                              SHOHIN-CD OF SHOKNR-M OF SQL-SHOKNR-M
+                       MOVE mise-cd OF SQL-TANTO-M
+                           TO HOTEN-CD OF SHOKNR-M OF SQL-SHOKNR-M
+
+                       PERFORM SELECT-SHOKNRM
+
+                       COMPUTE T-SAKI-AZKSU OF SHOKNR-M OF SQL-SHOKNR-M
+                         =     moci-su OF tnt-moci-m OF SQL-TNTSYA-MOCI
+                         - moci-bac-su OF tnt-moci-m OF SQL-TNTSYA-MOCI
+                             - uri-su OF tnt-moci-m OF SQL-TNTSYA-MOCI
+
+                       PERFORM UPDATE-TABLE-MAIN
+
+                       PERFORM SELECT-SHOHIN-M
+
+      *****************************************************************
+      *   商品ｍを検索し、商品雑親ｺｰﾄﾞが０以外のときは、
+      *   雑親ｺｰﾄﾞのレコードも更新する
+      *****************************************************************
+                       IF Z-OYA-CD OF SHOHIN-M
+                              OF SQL-SHOHIN-M NOT = 0 THEN
+              MOVE  0
+                  TO YOTE-YY        OF SHOKNR-M OF SQL-SHOKNR-M
+                     YOTE-MM        OF SHOKNR-M OF SQL-SHOKNR-M
+                     YOTE-DD        OF SHOKNR-M OF SQL-SHOKNR-M
+                     SIR-YY         OF SHOKNR-M OF SQL-SHOKNR-M
+                     SIR-MM         OF SHOKNR-M OF SQL-SHOKNR-M
+                     SIR-DD         OF SHOKNR-M OF SQL-SHOKNR-M
+                     FSIR-NEN       OF SHOKNR-M OF SQL-SHOKNR-M
+                     FSIR-TUKI      OF SHOKNR-M OF SQL-SHOKNR-M
+                     FSIR-HI        OF SHOKNR-M OF SQL-SHOKNR-M
+                     LAST-SIR-TANKA OF SHOKNR-M OF SQL-SHOKNR-M
+                     OYA-JUCHU-ZAN  OF SHOKNR-M OF SQL-SHOKNR-M
+                     HACHU-ZAN      OF SHOKNR-M OF SQL-SHOKNR-M
+                     MISE-HACHU-ZAN OF SHOKNR-M OF SQL-SHOKNR-M
+                     MOTIDASI-SU    OF SHOKNR-M OF SQL-SHOKNR-M
+                     S-SAKI-AZKSU   OF SHOKNR-M OF SQL-SHOKNR-M
+                     S-SAKI-AZK-ZAN OF SHOKNR-M OF SQL-SHOKNR-M
+                     T-SAKI-AZKSU   OF SHOKNR-M OF SQL-SHOKNR-M
+                     B-ZAIKOSU      OF SHOKNR-M OF SQL-SHOKNR-M
+                          MOVE Z-OYA-CD OF SHOHIN-M OF SQL-SHOHIN-M
+                              TO SHOHIN-CD OF SHOKNR-M OF SQL-SHOKNR-M
+                                 W-SHOHIN-CD
+                          MOVE mise-cd OF SQL-TANTO-M
+                              TO HOTEN-CD OF SHOKNR-M OF SQL-SHOKNR-M
+                          PERFORM SELECT-SHOKNRM
+      *****************************************************************
+      * 1999/11/10       =     moci-su OF tnt-moci-m OF SQL-TNTSYA-MOCI
+                        COMPUTE T-SAKI-AZKSU OF SHOKNR-M OF SQL-SHOKNR-M
+                         =      T-SAKI-AZKSU OF SHOKNR-M OF SQL-SHOKNR-M
+                         +     moci-su OF tnt-moci-m OF SQL-TNTSYA-MOCI
+                         - moci-bac-su OF tnt-moci-m OF SQL-TNTSYA-MOCI
+                             - uri-su OF tnt-moci-m OF SQL-TNTSYA-MOCI
+
+                       PERFORM UPDATE-TABLE-MAIN
+
+                 END-IF
+                 EXEC SQL
+                   FETCH CURS_TOK
+                    INTO :mise-cd OF SQL-TANTO-M,
+                         :syohin-cd OF tnt-moci-m OF SQL-TNTSYA-MOCI,
+                         :moci-su OF tnt-moci-m OF SQL-TNTSYA-MOCI,
+                         :moci-bac-su OF tnt-moci-m OF SQL-TNTSYA-MOCI,
+                         :uri-su OF tnt-moci-m OF SQL-TNTSYA-MOCI
+                 END-EXEC
+                    IF SQLCODE <> 0
+                      MOVE 1 TO END-FLG
+                    END-IF
+                 END-PERFORM
+                 EXEC SQL
+                   COMMIT WORK
+                 END-EXEC
+                 EXEC SQL
+                   BEGIN WORK
+                 END-EXEC
+                 MOVE 0 TO END-FLG
+           COPY TP1-DISP.
+                   DISP-HEADER, ' 得意先預けEND '
+           COPY END-TP1-DISP.
+
+      *****************************************************************
+                 EXEC SQL
+                   DECLARE CURS_JYUCHU CURSOR FOR
+                     SELECT *
+                      FROM  受注d
+                      WHERE 受注数量 > 売上数量
+                      ORDER BY 商品cd, 出荷店cd
+                 END-EXEC
+
+                 EXEC SQL
+                   OPEN CURS_JYUCHU
+                 END-EXEC
+
+                 EXEC SQL
+                   FETCH CURS_JYUCHU
+                    INTO :MQ-MSG-ZYU
+                 END-EXEC
+                 IF SQLCODE <> 0
+                   MOVE 1 TO END-FLG
+                 END-IF
+                 MOVE SYOHIN-CD OF ZYUTYU-D OF MQ-MSG-ZYU
+                   TO WK-SHOHIN
+                 PERFORM UNTIL END-FLG = 1
+                    IF TOKKA-KBN OF ZYUTYU-D OF MQ-MSG-ZYU <= "5"
+                       MOVE SYOHIN-CD OF ZYUTYU-D OF MQ-MSG-ZYU
+                         TO SHOHIN-CD OF SHOKNR-M OF SQL-SHOKNR-M
+                       IF SYOHIN-CD OF ZYUTYU-D OF MQ-MSG-ZYU
+                          <> WK-SHOHIN
+                         MOVE SYOHIN-CD OF ZYUTYU-D OF MQ-MSG-ZYU
+                           TO WK-SHOHIN
+                       END-IF
+                       PERFORM ZYU-KOSIN-PROC
+                       PERFORM UPDATE-TABLE-MAIN
+                       PERFORM SELECT-SHOHIN-M
+
+                 MOVE 0 TO END-FLG1
+                 MOVE WK-SHOHIN TO W-SHOHIN-CD-KO
+                 EXEC SQL
+                   DECLARE CURS_BUHIN1 CURSOR FOR
+                     SELECT *
+                      FROM  部品展開m
+                      WHERE 商品cd = :W-SHOHIN-CD-KO
+                 END-EXEC
+
+                 EXEC SQL
+                   OPEN CURS_BUHIN1
+                 END-EXEC
+
+                 EXEC SQL
+                   FETCH CURS_BUHIN1
+                    INTO :SQL-BUHIN-KO
+                 END-EXEC
+                 IF SQLCODE <> 0
+                   MOVE 1 TO END-FLG1
+                 END-IF
+                 PERFORM UNTIL END-FLG1 = 1
+                    MOVE BUHIN-CD OF BUHIN-M OF SQL-BUHIN-KO
+                      TO SHOHIN-CD OF SHOKNR-M OF SQL-SHOKNR-M
+                         SYOHIN-CD OF ZYUTYU-D OF MQ-MSG-ZYU
+                    PERFORM ZYU-KOSIN-PROC-KO
+                    PERFORM UPDATE-TABLE-MAIN
+
+                 MOVE 0 TO END-FLG2
+                 MOVE BUHIN-CD OF BUHIN-M OF SQL-BUHIN-KO
+                                     TO W-SHOHIN-CD-MAGO
+                 EXEC SQL
+                   DECLARE CURS_BUHIN2 CURSOR FOR
+                     SELECT *
+                      FROM  部品展開m
+                      WHERE 商品cd = :W-SHOHIN-CD-MAGO
+                 END-EXEC
+
+                 EXEC SQL
+                   OPEN CURS_BUHIN2
+                 END-EXEC
+
+                 EXEC SQL
+                   FETCH CURS_BUHIN2
+                    INTO :SQL-BUHIN-MAGO
+                 END-EXEC
+                 IF SQLCODE <> 0
+                   MOVE 1 TO END-FLG2
+                 END-IF
+                 PERFORM UNTIL END-FLG2 = 1
+                    MOVE BUHIN-CD OF BUHIN-M OF SQL-BUHIN-MAGO
+                      TO SHOHIN-CD OF SHOKNR-M OF SQL-SHOKNR-M
+                         SYOHIN-CD OF ZYUTYU-D OF MQ-MSG-ZYU
+                    PERFORM ZYU-KOSIN-PROC-MAGO
+                    PERFORM UPDATE-TABLE-MAIN
+                    EXEC SQL
+                      FETCH CURS_BUHIN2
+                       INTO :SQL-BUHIN-MAGO
+                    END-EXEC
+                    IF SQLCODE <> 0
+                      MOVE 1 TO END-FLG2
+                    END-IF
+                 END-PERFORM
+                    EXEC SQL
+                      FETCH CURS_BUHIN1
+                       INTO :SQL-BUHIN-KO
+                    END-EXEC
+                    IF SQLCODE <> 0
+                      MOVE 1 TO END-FLG1
+                    END-IF
+                 END-PERFORM
+
+      *****************************************************************
+      *   商品ｍを検索し、商品雑親ｺｰﾄﾞが０以外のときは、
+      *   雑親ｺｰﾄﾞのレコードも更新する
+      *****************************************************************
+                       IF Z-OYA-CD OF SHOHIN-M
+                                   OF SQL-SHOHIN-M NOT = 0 THEN
+                         MOVE Z-OYA-CD OF SHOHIN-M OF SQL-SHOHIN-M
+                             TO SHOHIN-CD OF SHOKNR-M OF SQL-SHOKNR-M
+                                SYOHIN-CD OF ZYUTYU-D OF MQ-MSG-ZYU
+                                W-SHOHIN-CD-KO
+                         PERFORM ZYU-KOSIN-PROC
+                         PERFORM UPDATE-TABLE-MAIN
+
+                 MOVE 0 TO END-FLG1
+                 EXEC SQL
+                   DECLARE CURS_BUHIN3 CURSOR FOR
+                     SELECT *
+                      FROM  部品展開m
+                      WHERE 商品cd = :W-SHOHIN-CD-KO
+                 END-EXEC
+
+                 EXEC SQL
+                   OPEN CURS_BUHIN3
+                 END-EXEC
+
+                 EXEC SQL
+                   FETCH CURS_BUHIN3
+                    INTO :SQL-BUHIN-KO
+                 END-EXEC
+                 IF SQLCODE <> 0
+                   MOVE 1 TO END-FLG1
+                 END-IF
+                 PERFORM UNTIL END-FLG1 = 1
+                    MOVE BUHIN-CD OF BUHIN-M OF SQL-BUHIN-KO
+                      TO SHOHIN-CD OF SHOKNR-M OF SQL-SHOKNR-M
+                         SYOHIN-CD OF ZYUTYU-D OF MQ-MSG-ZYU
+                    PERFORM ZYU-KOSIN-PROC-KO
+                    PERFORM UPDATE-TABLE-MAIN
+
+                 MOVE 0 TO END-FLG2
+                 MOVE BUHIN-CD OF BUHIN-M OF SQL-BUHIN-KO
+                                     TO W-SHOHIN-CD-MAGO
+                 EXEC SQL
+                   DECLARE CURS_BUHIN4 CURSOR FOR
+                     SELECT *
+                      FROM  部品展開m
+                      WHERE 商品cd = :W-SHOHIN-CD-MAGO
+                 END-EXEC
+
+                 EXEC SQL
+                   OPEN CURS_BUHIN4
+                 END-EXEC
+
+                 EXEC SQL
+                   FETCH CURS_BUHIN4
+                    INTO :SQL-BUHIN-MAGO
+                 END-EXEC
+                 IF SQLCODE <> 0
+                   MOVE 1 TO END-FLG2
+                 END-IF
+                 PERFORM UNTIL END-FLG2 = 1
+                    MOVE BUHIN-CD OF BUHIN-M OF SQL-BUHIN-MAGO
+                      TO SHOHIN-CD OF SHOKNR-M OF SQL-SHOKNR-M
+                         SYOHIN-CD OF ZYUTYU-D OF MQ-MSG-ZYU
+                    PERFORM ZYU-KOSIN-PROC-MAGO
+                    PERFORM UPDATE-TABLE-MAIN
+                    EXEC SQL
+                      FETCH CURS_BUHIN4
+                       INTO :SQL-BUHIN-MAGO
+                    END-EXEC
+                    IF SQLCODE <> 0
+                      MOVE 1 TO END-FLG2
+                    END-IF
+                 END-PERFORM
+                    EXEC SQL
+                      FETCH CURS_BUHIN3
+                       INTO :SQL-BUHIN-KO
+                    END-EXEC
+                    IF SQLCODE <> 0
+                      MOVE 1 TO END-FLG1
+                    END-IF
+                 END-PERFORM
+
+                       END-IF
+                    END-IF
+                    EXEC SQL
+                      FETCH CURS_JYUCHU
+                       INTO :MQ-MSG-ZYU
+                    END-EXEC
+                    IF SQLCODE <> 0
+                      MOVE 1 TO END-FLG
+                    END-IF
+                 END-PERFORM
+                 EXEC SQL
+                   COMMIT WORK
+                 END-EXEC
+                 EXEC SQL
+                   BEGIN WORK
+                 END-EXEC
+           COPY TP1-DISP.
+                   DISP-HEADER, ' 受注END '
+           COPY END-TP1-DISP.
+      *       WHEN "発注d"
+                 MOVE 0 TO END-FLG
+                 EXEC SQL
+                   DECLARE CURS_HACCHU CURSOR FOR
+                     SELECT *
+                      FROM  発注d
+                      WHERE 発注数量 > 入荷数量
+                        AND 手配区分 <> 1
+                        AND 仕入先cd > 0
+                      ORDER BY 商品cd, 入力店cd
+                 END-EXEC
+
+                 EXEC SQL
+                   OPEN CURS_HACCHU
+                 END-EXEC
+
+                 EXEC SQL
+                   FETCH CURS_HACCHU
+                    INTO :MQ-MSG-HAC
+                 END-EXEC
+                 IF SQLCODE <> 0
+                   MOVE 1 TO END-FLG
+                 END-IF
+                 MOVE SYOHIN-CD OF HACHU-D OF MQ-MSG-HAC
+                   TO WK-SHOHIN
+                 PERFORM UNTIL END-FLG = 1
+                       IF SYOHIN-CD OF HACHU-D OF MQ-MSG-HAC
+                          <> WK-SHOHIN
+                         MOVE SYOHIN-CD OF HACHU-D OF MQ-MSG-HAC
+                           TO WK-SHOHIN
+                       END-IF
+
+                       PERFORM HAC-KOSIN-PROC
+                       PERFORM UPDATE-TABLE-MAIN
+                       PERFORM SELECT-SHOHIN-M
+      *****************************************************************
+      *   商品ｍを検索し、商品雑親ｺｰﾄﾞが０以外のときは、
+      *   雑親ｺｰﾄﾞのレコードも更新する
+      *****************************************************************
+                       IF Z-OYA-CD OF SHOHIN-M
+                              OF SQL-SHOHIN-M NOT = 0 THEN
+                          MOVE Z-OYA-CD OF SHOHIN-M OF SQL-SHOHIN-M
+                              TO SHOHIN-CD OF SHOKNR-M OF SQL-SHOKNR-M
+                                 SYOHIN-CD OF HACHU-D OF MQ-MSG-HAC
+
+                          PERFORM HAC-KOSIN-PROC
+                          PERFORM UPDATE-TABLE-MAIN
+                       END-IF
+                    EXEC SQL
+                      FETCH CURS_HACCHU
+                       INTO :MQ-MSG-HAC
+                    END-EXEC
+                    IF SQLCODE <> 0
+                      MOVE 1 TO END-FLG
+                    END-IF
+                 END-PERFORM
+           COPY TP1-DISP.
+                   DISP-HEADER, ' 発注END '
+           COPY END-TP1-DISP.
+           CONTINUE.
+
+       999.
+           EXIT.
+      *****************************************************************
+      *  3.0                                                          *
+      *            終了処理                                           *
+      *                                                               *
+      *****************************************************************
+       END-PROC               SECTION.
+       000.
+           EXEC SQL
+             COMMIT WORK
+           END-EXEC.
+           COPY TP1-DISP.
+                   DISP-HEADER, ' 処理エンド '
+           COPY END-TP1-DISP.
+           STOP RUN.
+           CONTINUE.
+       999.
+           EXIT.
+      *****************************************************************
+      *  テーブル更新メイン
+      *****************************************************************
+       UPDATE-TABLE-MAIN       SECTION.
+       000.
+           IF UPD-TYPE = "U" THEN
+              PERFORM UPDATE-SHOKNRM
+           ELSE
+              IF UPD-TYPE = "A" THEN
+                 PERFORM INSERT-SHOKNRM
+              END-IF
+           END-IF
+           CONTINUE.
+       999.
+           EXIT.
+      *****************************************************************
+      *  各業務 商品管理ｍ更新処理                                    *
+      *****************************************************************
+      *****************************************************************
+      *   受注ｄからの商品管理ｍ更新
+      *****************************************************************
+       ZYU-KOSIN-PROC         SECTION.
+       000.
+           MOVE SYOHIN-CD OF ZYUTYU-D OF MQ-MSG-ZYU TO W-SHOHIN-CD
+           MOVE DASI-MISE-CD OF ZYUTYU-D OF MQ-MSG-ZYU
+               TO HOTEN-CD OF SHOKNR-M OF SQL-SHOKNR-M
+           COMPUTE ZYUT-SU OF ZYUTYU-D OF MQ-MSG-ZYU
+                     = ZYUT-SU OF ZYUTYU-D OF MQ-MSG-ZYU
+                     - URI-SU  OF ZYUTYU-D OF MQ-MSG-ZYU
+           MOVE 0   TO URI-SU  OF ZYUTYU-D OF MQ-MSG-ZYU
+           PERFORM SELECT-SHOKNRM
+           PERFORM SET-VALUE-ZYUTYU
+           CONTINUE.
+       999.
+           EXIT.
+
+       ZYU-KOSIN-PROC-KO      SECTION.
+       000.
+           MOVE SYOHIN-CD OF ZYUTYU-D OF MQ-MSG-ZYU TO W-SHOHIN-CD
+           MOVE DASI-MISE-CD OF ZYUTYU-D OF MQ-MSG-ZYU
+               TO HOTEN-CD OF SHOKNR-M OF SQL-SHOKNR-M
+           IF SQLCODE = 100
+             MOVE 0 TO BUHIN-CNT
+           END-IF
+           COMPUTE WK-ZYUT-SU-KO
+                     = ZYUT-SU OF ZYUTYU-D OF MQ-MSG-ZYU
+                     * BUHIN-SU OF BUHIN-M OF SQL-BUHIN-KO
+           PERFORM SELECT-SHOKNRM
+      *    IF TOKUI-CD OF ZYUTYU-D OF MQ-MSG-ZYU > 99 THEN
+             ADD WK-ZYUT-SU-KO
+                 TO OYA-JUCHU-ZAN  OF SHOKNR-M OF SQL-SHOKNR-M
+      *    END-IF.
+           CONTINUE.
+       999.
+           EXIT.
+
+       ZYU-KOSIN-PROC-MAGO    SECTION.
+       000.
+           MOVE SYOHIN-CD OF ZYUTYU-D OF MQ-MSG-ZYU TO W-SHOHIN-CD
+           MOVE DASI-MISE-CD OF ZYUTYU-D OF MQ-MSG-ZYU
+               TO HOTEN-CD OF SHOKNR-M OF SQL-SHOKNR-M
+           COMPUTE WK-ZYUT-SU-MAGO
+                     = ZYUT-SU OF ZYUTYU-D OF MQ-MSG-ZYU
+                     * BUHIN-SU OF BUHIN-M OF SQL-BUHIN-MAGO
+           PERFORM SELECT-SHOKNRM
+           IF TOKUI-CD OF ZYUTYU-D OF MQ-MSG-ZYU > 99 THEN
+             ADD WK-ZYUT-SU-MAGO
+                 TO OYA-JUCHU-ZAN  OF SHOKNR-M OF SQL-SHOKNR-M
+           END-IF.
+           CONTINUE.
+       999.
+           EXIT.
+      *****************************************************************
+      *   発注ｄからの商品管理ｍ更新                                  *
+      *****************************************************************
+       HAC-KOSIN-PROC         SECTION.
+       000.
+           MOVE SYOHIN-CD OF HACHU-D OF MQ-MSG-HAC TO W-SHOHIN-CD
+           MOVE IN-MISE-CD OF HACHU-D OF MQ-MSG-HAC
+               TO HOTEN-CD OF SHOKNR-M OF SQL-SHOKNR-M
+           COMPUTE HACHU-SU OF HACHU-D OF MQ-MSG-HAC
+                 = HACHU-SU OF HACHU-D OF MQ-MSG-HAC
+                 - NYUKA-SU OF HACHU-D OF MQ-MSG-HAC
+           MOVE 0 TO NYUKA-SU OF HACHU-D OF MQ-MSG-HAC
+           PERFORM SELECT-SHOKNRM
+           PERFORM SET-VALUE-HACHU
+           CONTINUE.
+       999.
+           EXIT.
+      *****************************************************************
+      *  受注ｄの変数代入
+      *****************************************************************
+       SET-VALUE-ZYUTYU       SECTION.
+       000.
+           IF UPD-TYPE = "A" THEN
+      *******< 挿入時 >*******
+              MOVE  0
+                  TO YOTE-YY        OF SHOKNR-M OF SQL-SHOKNR-M
+                     YOTE-MM        OF SHOKNR-M OF SQL-SHOKNR-M
+                     YOTE-DD        OF SHOKNR-M OF SQL-SHOKNR-M
+                     SIR-YY         OF SHOKNR-M OF SQL-SHOKNR-M
+                     SIR-MM         OF SHOKNR-M OF SQL-SHOKNR-M
+                     SIR-DD         OF SHOKNR-M OF SQL-SHOKNR-M
+                     FSIR-NEN       OF SHOKNR-M OF SQL-SHOKNR-M
+                     FSIR-TUKI      OF SHOKNR-M OF SQL-SHOKNR-M
+                     FSIR-HI        OF SHOKNR-M OF SQL-SHOKNR-M
+                     LAST-SIR-TANKA OF SHOKNR-M OF SQL-SHOKNR-M
+                     OYA-JUCHU-ZAN  OF SHOKNR-M OF SQL-SHOKNR-M
+                     HACHU-ZAN      OF SHOKNR-M OF SQL-SHOKNR-M
+                     MISE-HACHU-ZAN OF SHOKNR-M OF SQL-SHOKNR-M
+                     MOTIDASI-SU    OF SHOKNR-M OF SQL-SHOKNR-M
+                     S-SAKI-AZKSU   OF SHOKNR-M OF SQL-SHOKNR-M
+                     S-SAKI-AZK-ZAN OF SHOKNR-M OF SQL-SHOKNR-M
+                     T-SAKI-AZKSU   OF SHOKNR-M OF SQL-SHOKNR-M
+                     B-ZAIKOSU      OF SHOKNR-M OF SQL-SHOKNR-M
+      *****************************************************************
+      *   得意先ｃｄ＞ ９９場合、
+      *           受注残＝受注数量
+      *   上記以外の場合、受注残＝０
+      *****************************************************************
+           IF TOKUI-CD OF ZYUTYU-D OF MQ-MSG-ZYU > 99 THEN
+              COMPUTE JUCHU-ZAN OF SHOKNR-M OF SQL-SHOKNR-M
+                     = ZYUT-SU OF ZYUTYU-D OF MQ-MSG-ZYU
+           ELSE
+              MOVE 0 TO JUCHU-ZAN OF SHOKNR-M OF SQL-SHOKNR-M
+           END-IF
+      *****************************************************************
+      *   得意先ｃｄ＜＝９９の場合、
+      *           店間受注残＝受注数量
+      *   上記以外の場合、店間受注残＝０
+      *****************************************************************
+           IF TOKUI-CD OF ZYUTYU-D OF MQ-MSG-ZYU <= 99 THEN
+              COMPUTE MISE-JUCHU-ZAN OF SHOKNR-M OF SQL-SHOKNR-M
+                     = ZYUT-SU OF ZYUTYU-D OF MQ-MSG-ZYU
+           ELSE
+              MOVE 0 TO MISE-JUCHU-ZAN OF SHOKNR-M OF SQL-SHOKNR-M
+           END-IF
+        ELSE
+      ******< 更新時 >******
+      *****************************************************************
+      *   得意先ｃｄ＞９９の場合、
+      *           受注残＝受注残+受注数量
+      *****************************************************************
+           IF TOKUI-CD OF ZYUTYU-D OF MQ-MSG-ZYU > 99 THEN
+              COMPUTE JUCHU-ZAN OF SHOKNR-M OF SQL-SHOKNR-M
+                     = JUCHU-ZAN OF SHOKNR-M OF SQL-SHOKNR-M
+                     + ZYUT-SU OF ZYUTYU-D OF MQ-MSG-ZYU
+           END-IF
+      *****************************************************************
+      *   得意先ｃｄ＜＝９９の場合、
+      *           店間受注残＝店間受注残+受注数量
+      *****************************************************************
+           IF TOKUI-CD OF ZYUTYU-D OF MQ-MSG-ZYU <= 99 THEN
+              COMPUTE MISE-JUCHU-ZAN OF SHOKNR-M OF SQL-SHOKNR-M
+                     = MISE-JUCHU-ZAN OF SHOKNR-M OF SQL-SHOKNR-M
+                     + ZYUT-SU OF ZYUTYU-D OF MQ-MSG-ZYU
+           CONTINUE.
+       999.
+           EXIT.
+      *****************************************************************
+      *  発注ｄの変数代入
+      *****************************************************************
+       SET-VALUE-HACHU       SECTION.
+       000.
+           IF UPD-TYPE = "A" THEN
+      *******< 挿入時 >*******
+              MOVE  0
+                  TO YOTE-YY        OF SHOKNR-M OF SQL-SHOKNR-M
+                     YOTE-MM        OF SHOKNR-M OF SQL-SHOKNR-M
+                     YOTE-DD        OF SHOKNR-M OF SQL-SHOKNR-M
+                     SIR-YY         OF SHOKNR-M OF SQL-SHOKNR-M
+                     SIR-MM         OF SHOKNR-M OF SQL-SHOKNR-M
+                     SIR-DD         OF SHOKNR-M OF SQL-SHOKNR-M
+                     FSIR-NEN       OF SHOKNR-M OF SQL-SHOKNR-M
+                     FSIR-TUKI      OF SHOKNR-M OF SQL-SHOKNR-M
+                     FSIR-HI        OF SHOKNR-M OF SQL-SHOKNR-M
+                     LAST-SIR-TANKA OF SHOKNR-M OF SQL-SHOKNR-M
+                     JUCHU-ZAN      OF SHOKNR-M OF SQL-SHOKNR-M
+                     OYA-JUCHU-ZAN  OF SHOKNR-M OF SQL-SHOKNR-M
+                     MISE-JUCHU-ZAN OF SHOKNR-M OF SQL-SHOKNR-M
+                     MOTIDASI-SU    OF SHOKNR-M OF SQL-SHOKNR-M
+                     S-SAKI-AZKSU   OF SHOKNR-M OF SQL-SHOKNR-M
+                     T-SAKI-AZKSU   OF SHOKNR-M OF SQL-SHOKNR-M
+                     B-ZAIKOSU      OF SHOKNR-M OF SQL-SHOKNR-M
+      *****************************************************************
+      *   預け発注区分＜＞１　且つ　仕入先ｃｄ＞９９の場合、
+      *           発注残＝発注数量
+      *   上記以外の場合、発注残＝０
+      *****************************************************************
+           IF AZUKE-HACHU-KB OF HACHU-D OF MQ-MSG-HAC <> 1 AND
+              SIR-CD OF HACHU-D OF MQ-MSG-HAC > 99 THEN
+              COMPUTE HACHU-ZAN OF SHOKNR-M OF SQL-SHOKNR-M
+                     = HACHU-SU OF HACHU-D OF MQ-MSG-HAC
+           ELSE
+              MOVE 0 TO HACHU-ZAN OF SHOKNR-M OF SQL-SHOKNR-M
+           END-IF
+      *****************************************************************
+      *   預け発注区分＜＞１　且つ　得意先ｃｄ＜＝９９の場合、
+      *           店間発注残＝発注数量
+      *   上記以外の場合、店間発注残＝０
+      *****************************************************************
+           IF AZUKE-HACHU-KB OF HACHU-D OF MQ-MSG-HAC <> 1 AND
+              SIR-CD OF HACHU-D OF MQ-MSG-HAC <= 99 THEN
+              COMPUTE MISE-HACHU-ZAN OF SHOKNR-M OF SQL-SHOKNR-M
+                     = HACHU-SU OF HACHU-D OF MQ-MSG-HAC
+           ELSE
+              MOVE 0 TO MISE-HACHU-ZAN OF SHOKNR-M OF SQL-SHOKNR-M
+           END-IF
+      *****************************************************************
+      *   預け発注区分＝１　の場合、
+      *           仕入先預け発注残＝発注数量
+      *   上記以外の場合、仕入先預け発注残＝０
+      *****************************************************************
+           IF AZUKE-HACHU-KB OF HACHU-D OF MQ-MSG-HAC = 1 THEN
+              COMPUTE S-SAKI-AZK-ZAN OF SHOKNR-M OF SQL-SHOKNR-M
+                     = HACHU-SU OF HACHU-D OF MQ-MSG-HAC
+           ELSE
+              MOVE 0 TO S-SAKI-AZK-ZAN OF SHOKNR-M OF SQL-SHOKNR-M
+           END-IF
+        ELSE
+      ******< 更新時 >******
+      *****************************************************************
+      *   預け発注区分＜＞１　且つ　仕入先ｃｄ＞９９の場合、
+      *           発注残＝発注残＋発注数量
+      *****************************************************************
+           IF AZUKE-HACHU-KB OF HACHU-D OF MQ-MSG-HAC <> 1 AND
+              SIR-CD OF HACHU-D OF MQ-MSG-HAC > 99 THEN
+              COMPUTE HACHU-ZAN OF SHOKNR-M OF SQL-SHOKNR-M
+                     = HACHU-ZAN OF SHOKNR-M OF SQL-SHOKNR-M
+                     + HACHU-SU OF HACHU-D OF MQ-MSG-HAC
+           END-IF
+      *****************************************************************
+      *   預け発注区分＜＞１　且つ　得意先ｃｄ＜＝９９の場合、
+      *           店間発注残＝店間発注残＋発注数量
+      *****************************************************************
+           IF AZUKE-HACHU-KB OF HACHU-D OF MQ-MSG-HAC <> 1 AND
+              SIR-CD OF HACHU-D OF MQ-MSG-HAC <= 99 THEN
+              COMPUTE MISE-HACHU-ZAN OF SHOKNR-M OF SQL-SHOKNR-M
+                     = MISE-HACHU-ZAN OF SHOKNR-M OF SQL-SHOKNR-M
+                     + HACHU-SU OF HACHU-D OF MQ-MSG-HAC
+           END-IF
+      *****************************************************************
+      *   預け発注区分＝１　の場合、
+      *           仕入先預け発注残＝発注数量
+      *****************************************************************
+           IF AZUKE-HACHU-KB OF HACHU-D OF MQ-MSG-HAC = 1 THEN
+              COMPUTE S-SAKI-AZK-ZAN OF SHOKNR-M OF SQL-SHOKNR-M
+                     = S-SAKI-AZK-ZAN OF SHOKNR-M OF SQL-SHOKNR-M
+                     + HACHU-SU OF HACHU-D OF MQ-MSG-HAC
+           END-IF
+           CONTINUE.
+       999.
+           EXIT.
+      *****************************************************************
+      *     商品ｍのＳＥＬＥＣＴ                                      *
+      *****************************************************************
+       SELECT-SHOHIN-M         SECTION.
+       000.
+           MOVE "SELECT 商品ｍ"  TO  SQL-NM
+           EXEC  SQL
+                SELECT
+                       商品cd,
+                       雑親cd,
+                       品種l,
+                       品種m,
+                       品種s
+                  INTO :SHOHIN-CD OF SHOHIN-M OF SQL-SHOHIN-M,
+                       :Z-OYA-CD  OF SHOHIN-M OF SQL-SHOHIN-M,
+                       :HINSHUL   OF SHOHIN-M OF SQL-SHOHIN-M,
+                       :HINSHUM   OF SHOHIN-M OF SQL-SHOHIN-M,
+                       :HINSHUS   OF SHOHIN-M OF SQL-SHOHIN-M
+                  FROM 商品M
+                 WHERE 商品CD = :SHOHIN-CD OF SHOKNR-M
+                                            OF SQL-SHOKNR-M
+           END-EXEC
+           IF SQLCODE = 100 THEN
+              move 0 to Z-OYA-CD  OF SHOHIN-M OF SQL-SHOHIN-M,
+                        HINSHUL   OF SHOHIN-M OF SQL-SHOHIN-M,
+                        HINSHUM   OF SHOHIN-M OF SQL-SHOHIN-M,
+                        HINSHUS   OF SHOHIN-M OF SQL-SHOHIN-M
+           END-IF
+           CONTINUE.
+       999.
+           EXIT.
+      *****************************************************************
+      *     商品管理ｍのＳＥＬＥＣＴ                                  *
+      *****************************************************************
+       SELECT-SHOKNRM       SECTION.
+       000.
+           MOVE  "SELECT 商品管理M"  TO SQL-NM
+           MOVE W-SHOHIN-CD TO SHOHIN-CD OF SHOKNR-M OF SQL-SHOKNR-M
+           EXEC  SQL
+             DECLARE CURS_SHOKNRM CURSOR FOR
+                SELECT
+                    保有店CD,
+                    商品CD,
+                    予定日付年,
+                    予定日付月,
+                    予定日付日,
+                    仕入日付年,
+                    仕入日付月,
+                    仕入日付日,
+                    振替入荷日付年,
+                    振替入荷日付月,
+                    振替入荷日付日,
+                    最終仕入単価,
+                    受注残,
+                    親受注残,
+                    発注残,
+                    店間受注残,
+                    店間発注残,
+                    持ち出し数,
+                    仕入先預け数,
+                    仕入先預け発注残,
+                    得意先預け数,
+                    Ｂ品在庫数
+                  FROM 商品管理M
+                 WHERE  保有店CD = :HOTEN-CD OF SHOKNR-M
+                                              OF SQL-SHOKNR-M
+                   AND  商品CD   = :W-SHOHIN-CD
+                   FOR UPDATE
+           END-EXEC
+           MOVE "OPEN CURS_SHOKNRM"  TO  SQL-NM
+           EXEC SQL
+             OPEN  CURS_SHOKNRM
+           END-EXEC
+           MOVE  "FETCH 商品管理ｍ"  TO SQL-NM
+           EXEC SQL
+             FETCH CURS_SHOKNRM
+                INTO
+                        :HOTEN-CD        OF SHOKNR-M OF SQL-SHOKNR-M,
+                        :SHOHIN-CD       OF SHOKNR-M OF SQL-SHOKNR-M,
+                        :YOTE-YY         OF SHOKNR-M OF SQL-SHOKNR-M,
+                        :YOTE-MM         OF SHOKNR-M OF SQL-SHOKNR-M,
+                        :YOTE-DD         OF SHOKNR-M OF SQL-SHOKNR-M,
+                        :SIR-YY          OF SHOKNR-M OF SQL-SHOKNR-M,
+                        :SIR-MM          OF SHOKNR-M OF SQL-SHOKNR-M,
+                        :SIR-DD          OF SHOKNR-M OF SQL-SHOKNR-M,
+                        :FSIR-NEN        OF SHOKNR-M OF SQL-SHOKNR-M,
+                        :FSIR-TUKI       OF SHOKNR-M OF SQL-SHOKNR-M,
+                        :FSIR-HI         OF SHOKNR-M OF SQL-SHOKNR-M,
+                        :LAST-SIR-TANKA  OF SHOKNR-M OF SQL-SHOKNR-M,
+                        :JUCHU-ZAN       OF SHOKNR-M OF SQL-SHOKNR-M,
+                        :OYA-JUCHU-ZAN   OF SHOKNR-M OF SQL-SHOKNR-M,
+                        :HACHU-ZAN       OF SHOKNR-M OF SQL-SHOKNR-M,
+                        :MISE-JUCHU-ZAN  OF SHOKNR-M OF SQL-SHOKNR-M,
+                        :MISE-HACHU-ZAN  OF SHOKNR-M OF SQL-SHOKNR-M,
+                        :MOTIDASI-SU     OF SHOKNR-M OF SQL-SHOKNR-M,
+                        :S-SAKI-AZKSU    OF SHOKNR-M OF SQL-SHOKNR-M,
+                        :S-SAKI-AZK-ZAN  OF SHOKNR-M OF SQL-SHOKNR-M,
+                        :T-SAKI-AZKSU    OF SHOKNR-M OF SQL-SHOKNR-M,
+                        :B-ZAIKOSU       OF SHOKNR-M OF SQL-SHOKNR-M
+           END-EXEC
+      *****************************************************************
+      *     商品管理ｍ存在チェック　　　  　　　                      *
+      *****************************************************************
+           IF SQLCODE = 100 THEN
+              MOVE "A" TO UPD-TYPE
+           ELSE
+              MOVE "U" TO UPD-TYPE
+           END-IF
+           IF UPD-TYPE = "A" OR " " THEN
+              MOVE "CLOSE CURS_SHOKNRM" TO SQL-NM
+              EXEC SQL
+                CLOSE CURS_SHOKNRM
+              END-EXEC
+           END-IF
+           CONTINUE.
+       999.
+           EXIT.
+      *****************************************************************
+      *     商品管理ｍ ｕｐｄａｔｅ処理                               *
+      *****************************************************************
+       UPDATE-SHOKNRM            SECTION.
+       000.
+           MOVE "UPDATE 商品管理ｍ" TO SQL-NM
+           EXEC SQL
+               UPDATE  商品管理M
+               SET  保有店CD         =
+                    :HOTEN-CD       OF SHOKNR-M OF SQL-SHOKNR-M ,
+                    商品CD           =
+                    :W-SHOHIN-CD ,
+                    予定日付年       =
+                    :YOTE-YY        OF SHOKNR-M OF SQL-SHOKNR-M ,
+                    予定日付月       =
+                    :YOTE-MM        OF SHOKNR-M OF SQL-SHOKNR-M ,
+                    予定日付日       =
+                    :YOTE-DD        OF SHOKNR-M OF SQL-SHOKNR-M ,
+                    仕入日付年       =
+                    :SIR-YY         OF SHOKNR-M OF SQL-SHOKNR-M ,
+                    仕入日付月       =
+                    :SIR-MM         OF SHOKNR-M OF SQL-SHOKNR-M ,
+                    仕入日付日       =
+                    :SIR-DD         OF SHOKNR-M OF SQL-SHOKNR-M ,
+                    振替入荷日付年   =
+                    :FSIR-NEN       OF SHOKNR-M OF SQL-SHOKNR-M ,
+                    振替入荷日付月   =
+                    :FSIR-TUKI      OF SHOKNR-M OF SQL-SHOKNR-M ,
+                    振替入荷日付日   =
+                    :FSIR-HI        OF SHOKNR-M OF SQL-SHOKNR-M ,
+                    最終仕入単価     =
+                    :LAST-SIR-TANKA OF SHOKNR-M OF SQL-SHOKNR-M ,
+                    受注残           =
+                    :JUCHU-ZAN      OF SHOKNR-M OF SQL-SHOKNR-M ,
+                    親受注残         =
+                    :OYA-JUCHU-ZAN  OF SHOKNR-M OF SQL-SHOKNR-M ,
+                    発注残           =
+                    :HACHU-ZAN      OF SHOKNR-M OF SQL-SHOKNR-M ,
+                    店間受注残       =
+                    :MISE-JUCHU-ZAN OF SHOKNR-M OF SQL-SHOKNR-M ,
+                    店間発注残       =
+                    :MISE-HACHU-ZAN OF SHOKNR-M OF SQL-SHOKNR-M ,
+                    持ち出し数       =
+                    :MOTIDASI-SU    OF SHOKNR-M OF SQL-SHOKNR-M ,
+                    仕入先預け数     =
+                    :S-SAKI-AZKSU   OF SHOKNR-M OF SQL-SHOKNR-M ,
+                    仕入先預け発注残 =
+                    :S-SAKI-AZK-ZAN OF SHOKNR-M OF SQL-SHOKNR-M ,
+                    得意先預け数     =
+                    :T-SAKI-AZKSU   OF SHOKNR-M OF SQL-SHOKNR-M ,
+                    Ｂ品在庫数       =
+                    :B-ZAIKOSU      OF SHOKNR-M OF SQL-SHOKNR-M
+                   WHERE CURRENT OF CURS_SHOKNRM
+           END-EXEC
+
+           MOVE "CLOSE CURS_SHOKNRM" TO SQL-NM
+           EXEC SQL
+             CLOSE  CURS_SHOKNRM
+           END-EXEC
+           CONTINUE.
+       999.
+           EXIT.
+      *****************************************************************
+      *   商品管理ｍのｉｎｓｅｒｔ処理                                *
+      *****************************************************************
+       INSERT-SHOKNRM         SECTION.
+       000.
+           MOVE "INSERT 商品管理ｍ"  TO SQL-NM
+
+           EXEC SQL
+             INSERT  INTO 商品管理M
+                   (
+                    保有店CD,
+                    商品CD,
+                    予定日付年,
+                    予定日付月,
+                    予定日付日,
+                    仕入日付年,
+                    仕入日付月,
+                    仕入日付日,
+                    振替入荷日付年,
+                    振替入荷日付月,
+                    振替入荷日付日,
+                    最終仕入単価,
+                    受注残,
+                    親受注残,
+                    発注残,
+                    店間受注残,
+                    店間発注残,
+                    持ち出し数,
+                    仕入先預け数,
+                    仕入先預け発注残,
+                    得意先預け数,
+                    Ｂ品在庫数
+                                         )
+                VALUES (:HOTEN-CD        OF SHOKNR-M OF SQL-SHOKNR-M,
+                        :W-SHOHIN-CD,
+                        :YOTE-YY         OF SHOKNR-M OF SQL-SHOKNR-M,
+                        :YOTE-MM         OF SHOKNR-M OF SQL-SHOKNR-M,
+                        :YOTE-DD         OF SHOKNR-M OF SQL-SHOKNR-M,
+                        :SIR-YY          OF SHOKNR-M OF SQL-SHOKNR-M,
+                        :SIR-MM          OF SHOKNR-M OF SQL-SHOKNR-M,
+                        :SIR-DD          OF SHOKNR-M OF SQL-SHOKNR-M,
+                        :FSIR-NEN        OF SHOKNR-M OF SQL-SHOKNR-M,
+                        :FSIR-TUKI       OF SHOKNR-M OF SQL-SHOKNR-M,
+                        :FSIR-HI         OF SHOKNR-M OF SQL-SHOKNR-M,
+                        :LAST-SIR-TANKA  OF SHOKNR-M OF SQL-SHOKNR-M,
+                        :JUCHU-ZAN       OF SHOKNR-M OF SQL-SHOKNR-M,
+                        :OYA-JUCHU-ZAN   OF SHOKNR-M OF SQL-SHOKNR-M,
+                        :HACHU-ZAN       OF SHOKNR-M OF SQL-SHOKNR-M,
+                        :MISE-JUCHU-ZAN  OF SHOKNR-M OF SQL-SHOKNR-M,
+                        :MISE-HACHU-ZAN  OF SHOKNR-M OF SQL-SHOKNR-M,
+                        :MOTIDASI-SU     OF SHOKNR-M OF SQL-SHOKNR-M,
+                        :S-SAKI-AZKSU    OF SHOKNR-M OF SQL-SHOKNR-M,
+                        :S-SAKI-AZK-ZAN  OF SHOKNR-M OF SQL-SHOKNR-M,
+                        :T-SAKI-AZKSU    OF SHOKNR-M OF SQL-SHOKNR-M,
+                        :B-ZAIKOSU       OF SHOKNR-M OF SQL-SHOKNR-M)
+           END-EXEC
+           CONTINUE.
+       999.
+           EXIT.
+      *****************************************************************
+      *    年月獲得処理                                               *
+      *****************************************************************
+       YM-GET-PROC           SECTION.
+      * << 入力年月日 >> *
+           CALL ECO-FMT USING JDATE,FMT,FMT-LEN,SDATE,SDATE-LEN
+                STAT-CODE
+           IF STAT-CODE <> 0
+           THEN
+                move STAT-CODE to display-number-9
+                COPY TP1-DISP.
+                        " 日付変換エラー,エラーコード = ",
+                        display-number-9
+                COPY END-TP1-DISP.
+           END-IF
+           MOVE SDATE TO W-DATE
+           CONTINUE.
+       999.
+           EXIT.
+      *****************************************************************
+      *  その他のERROR                                                *
+      *****************************************************************
+       OTHER-ERROR            SECTION.
+       000.
+           MOVE 100 TO CALL-STATUS
+           GO TO END-PROC
+           CONTINUE.
+       999.
+           EXIT.
+       COPY SQL-PROC.

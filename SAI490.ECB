@@ -1,0 +1,490 @@
+000100 IDENTIFICATION                  DIVISION.
+000200 PROGRAM-ID.                     SAI490.
+000300 AUTHOR.                         HI-ELECOM.
+000400 DATE-COMPILED.                  TODAY.
+000500******************************************************************
+000600*    SAI490:ç¬åîéËêîóøèWåvÇeÇhÇkÇdçÏê¨                           *
+000700*    DATE-WRITTEN.     04/10/12                     MAP (      ) *
+000800*    UPDATE-WRITTEN.     /  /                       PRT (      ) *
+000900******************************************************************
+001000 ENVIRONMENT                     DIVISION.
+001100 CONFIGURATION                   SECTION.
+001200 SOURCE-COMPUTER.                HITAC.
+001300 OBJECT-COMPUTER.                HITAC.
+001400 INPUT-OUTPUT                    SECTION.
+001500 FILE-CONTROL.
+001600*                                **  íSìñÉ}ÉXÉ^Å[  **
+001700*    SELECT  INP1        ASSIGN  TO  I1
+001800*            ORGANIZATION        IS  INDEXED
+001900*            ACCESS      MODE    IS  SEQUENTIAL
+002000*            RECORD      KEY     IS  KEY∫≥”∏-TAN.
+002100*                                **  éËêîóøèWåvÉtÉ@ÉCÉã  **
+002200*    SELECT  OUT1        ASSIGN  TO  O1
+002300*            ORGANIZATION        IS  INDEXED
+002400*            ACCESS      MODE    IS  SEQUENTIAL
+002500*            RECORD      KEY     IS  KEY∫≥”∏-STE.
+002600*
+002700 I-O-CONTROL.
+002800*    APPLY  FILE-SHARE  ON  INP1.
+002900*
+003000 DATA                            DIVISION.
+003100 FILE                            SECTION.
+003200*FD  INP1
+003300*    LABEL  RECORD  IS  STANDARD.
+003400*01  INP1-REC     COPY  TANMAST.
+003500*
+003600*FD  OUT1
+003700*    LABEL  RECORD  IS  STANDARD.
+003800*01  OUT1-REC     COPY  SAITESF.
+003900*
+004000 WORKING-STORAGE                 SECTION.
+004100******************************************************************
+004200*    ÇrÇpÇkïœêîíËã`                                              *
+004300******************************************************************
+004400     EXEC SQL
+004500        BEGIN DECLARE SECTION
+004600     END-EXEC.
+004700*
+004800*    ÇrÇpÇkä÷òAïœêî
+004900     EXEC SQL
+005000        COPY SQLWORK
+005100     END-EXEC.
+005200*
+005300*    íSìñÉ}ÉXÉ^Å[
+005400     EXEC SQL
+005500        COPY TANMAST-DB
+005600     END-EXEC.
+005700*
+005800*    ç¬åîéËêîóøèWåvÉtÉ@ÉCÉã
+005900     EXEC SQL
+006000        COPY SAITESF-DB
+006100     END-EXEC.
+006200*
+006300     EXEC SQL
+006400        END DECLARE SECTION
+006500     END-EXEC.
+006600*
+006700     COPY  TANMAST.
+006800     COPY  SAITESF.
+006900******************************************************************
+007000 01  ENDFLG                      PIC  9(001)  VALUE  0.
+007100******************************************************************
+007200*    ÇoÇqÇnÇbÇdÇcÇtÇqÇdÅ@ÇcÇhÇuÇhÇrÇhÇnÇm                        *
+007300******************************************************************
+007400 PROCEDURE                       DIVISION.
+007500 PRG-START.
+007600     PERFORM  INITIAL-RTN.
+007700     PERFORM  MAIN-RTN  UNTIL  ENDFLG   =   1.
+007800     PERFORM  FINISH-RTN.
+007900     STOP  RUN.
+008000******************************************************************
+008100*    èâä˙Å@èàóù                                                  *
+008200******************************************************************
+008300 INITIAL-RTN                     SECTION.
+008400 INITIAL-ENT.
+008500*
+008600     MOVE  'SAI490'             TO  EXEC-PROG-ID.
+008700*
+008800*    ÇcÇaê⁄ë±
+008900     PERFORM  DB-CONNECT-PROC.
+009000*
+009100*
+009200*    OPEN  INPUT   INP1.
+009300*    OPEN  OUTPUT  OUT1.
+009400*
+009500     PERFORM   TANMAST-DECLARE-PROC
+009600     PERFORM   READ-RTN.
+009700*
+009800 INITIAL-EXT.
+009900     EXIT.
+010000******************************************************************
+010100*    ÉÅÉCÉìÅ@èàóù                                                *
+010200******************************************************************
+010300 MAIN-RTN                        SECTION.
+010400 MAIN-ENT.
+010500*
+010600*    MOVE  ZERO                  TO  OUT1-REC.
+010700*    INITIALIZE                      OUT1-REC.
+010800     MOVE  ZERO                  TO  ª≤π›√Ω≥ÿ÷≥-STE.
+010900     INITIALIZE                      ª≤π›√Ω≥ÿ÷≥-STE.
+011000*
+011100     MOVE  ¿›ƒ≥NO-TAN            TO  ¿›ƒ≥NO-STE.
+011200     MOVE  K¿›ƒ≥“≤-TAN           TO  K¿›ƒ≥“≤-STE.
+011300     MOVE  º√›NO-TAN             TO  º√›NO-STE.
+011400*    WRITE  OUT1-REC
+011500*      INVALID  KEY
+011600*        DISPLAY  '###  TANMAST WRITE ERROR  ### ' KEY∫≥”∏-TAN
+011700*                                                   UPON  CONSOLE
+011800*        DISPLAY  '###  TANMAST WRITE ERROR  ### ' KEY∫≥”∏-TAN
+011900*                                                   UPON  SYSOUT
+012000*        DISPLAY   'PROGRAM-ID  '  EXEC-PROG-ID     UPON  SYSOUT
+012100*        DISPLAY  'Å@'                              UPON  SYSOUT.
+012200     PERFORM  SAITESF-INSERT-PROC.
+012300     PERFORM    READ-RTN.
+012400*
+012500 MAIN-EXT.
+012600     EXIT.
+012700******************************************************************
+012800*    íSìñÉ}ÉXÉ^Å[Å@ÇqÇdÇ`Çcèàóù                                  *
+012900******************************************************************
+013000 READ-RTN                        SECTION.
+013100 READ-ENT.
+013200*
+013300*    READ  INP1
+013400*      AT  END
+013500*        MOVE  1                 TO  ENDFLG.
+013600     PERFORM  TANMAST-FETCH-PROC
+013700     IF  FLG-INV  =  '1'
+013800       THEN
+013900         MOVE  1                 TO  ENDFLG
+014000       ELSE
+014100         CONTINUE
+014200     END-IF
+014300*
+014400 READ-EXT.
+014500     EXIT.
+014600******************************************************************
+014700*    èIóπÅ@èàóù                                                  *
+014800******************************************************************
+014900 FINISH-RTN                      SECTION.
+015000 FINISH-ENT.
+015100*
+015200* 
+015300*    ÇcÇaêÿíf
+015400     PERFORM  DB-DISCONNECT-PROC.
+015500* 
+015600*    CLOSE  INP1  OUT1.
+015700*    CLOSE  OUT1.
+015800*
+015900 FINISH-EXT.
+016000     EXIT.
+016100******************************************************************
+016200*    HiRDBÇ÷ÇÃê⁄ë±                                               *
+016300******************************************************************
+016400 DB-CONNECT-PROC                 SECTION.
+016500 000.
+016600*
+016700     EXEC SQL
+016800       WHENEVER  SQLERROR  PERFORM  SQL-ERROR
+016900     END-EXEC
+017000*
+017100     MOVE  'CONNECT'             TO  EXEC-SQL-INFO
+017200     EXEC SQL
+017300       CONNECT
+017400     END-EXEC
+017500*
+017600     CONTINUE.
+017700 999.
+017800     EXIT.
+017900******************************************************************
+018000*    HiRDBÇÃêÿíf                                                 *
+018100******************************************************************
+018200 DB-DISCONNECT-PROC              SECTION.
+018300 000.
+018400*
+018500     MOVE  'CLOSE  curTANMAST'   TO  EXEC-SQL-INFO
+018600     EXEC SQL
+018700       CLOSE  curTANMAST
+018800     END-EXEC
+018900*
+019000     MOVE  'COMMIT'              TO  EXEC-SQL-INFO
+019100     EXEC SQL
+019200       COMMIT
+019300     END-EXEC
+019400*
+019500     MOVE  'DISCONNECT'          TO  EXEC-SQL-INFO
+019600     EXEC SQL
+019700       DISCONNECT
+019800     END-EXEC
+019900*
+020000     CONTINUE.
+020100 999.
+020200     EXIT.
+020300*
+020400******************************************************************
+020500*    SQL TANMAST DECLAREãÂÉvÉçÉVÅ[ÉWÉÉ                           *
+020600******************************************************************
+020700 TANMAST-DECLARE-PROC            SECTION.
+020800 000.
+020900*
+021000     MOVE  'TANMAST-DECLARE-PROC'    TO  EXEC-SQL-INFO
+021100     MOVE  SPACE                 TO  EXEC-SQL-MSG
+021200*
+021300     PERFORM  PUT-TANMAST-PROC
+021400*
+021500     EXEC SQL
+021600       DECLARE curTANMAST CURSOR FOR
+021700         SELECT
+021800                ¿›ƒ≥NO
+021900             ,  K¿›ƒ≥“≤
+022000             ,  º√›NO
+022100             ,  ∏ﬁŸ∞Ãﬂ
+022200             ,  YDKG≥ÿ
+022300             ,  YDKG∂≤
+022400             ,  YDKS≥ÿ
+022500             ,  YDKS∂≤
+022600             ,  YDTG≥ÿ
+022700             ,  YDTG∂≤
+022800             ,  YDTS≥ÿ
+022900             ,  YDTS∂≤
+023000             ,  YDø≥∂Ãﬁ
+023100             ,  YDø≥√Ω≥
+023200             ,  YMKG≥ÿ
+023300             ,  YMKG∂≤
+023400             ,  YMKS≥ÿ
+023500             ,  YMKS∂≤
+023600             ,  YMTG≥ÿ
+023700             ,  YMTG∂≤
+023800             ,  YMTS≥ÿ
+023900             ,  YMTS∂≤
+024000             ,  YMø≥∂Ãﬁ
+024100             ,  YMø≥√Ω≥
+024200             ,  UDKG≥ÿ
+024300             ,  UDKG∂≤
+024400             ,  UDKS≥ÿ
+024500             ,  UDKS∂≤
+024600             ,  UDTG≥ÿ
+024700             ,  UDTG∂≤
+024800             ,  UDTS≥ÿ
+024900             ,  UDTS∂≤
+025000             ,  UDø≥∂Ãﬁ
+025100             ,  UDø≥√Ω≥
+025200             ,  UMKG≥ÿ
+025300             ,  UMKG∂≤
+025400             ,  UMKS≥ÿ
+025500             ,  UMKS∂≤
+025600             ,  UMTG≥ÿ
+025700             ,  UMTG∂≤
+025800             ,  UMTS≥ÿ
+025900             ,  UMTS∂≤
+026000             ,  UMø≥∂Ãﬁ
+026100             ,  UMø≥√Ω≥
+026200             ,  ≥ÿ¿¡ªﬁ›
+026300             ,  ∂≤¿¡ªﬁ›
+026400             ,  SSDC≥ÿ
+026500             ,  SSDC∂≤
+026600             ,  SSDCªﬁ›
+026700             ,  SSDƒ≥º›F
+026800             ,  SSDWº›∑
+026900             ,  SSDWπ≤øﬁ∏
+027000             ,  SSDS1Ω≥
+027100             ,  SSDS1√Ω≥
+027200             ,  SSDS2Ω≥
+027300             ,  SSDS2√Ω≥
+027400             ,  SSDS3Ω≥
+027500             ,  SSDS3√Ω≥
+027600             ,  SSMC≥ÿ
+027700             ,  SSMC∂≤
+027800             ,  SSMCªﬁ›
+027900             ,  SSMƒ≥º›F
+028000             ,  SSMWº›∑
+028100             ,  SSMWπ≤øﬁ∏
+028200             ,  SSMS1Ω≥
+028300             ,  SSMS1√Ω≥
+028400             ,  SSMS2Ω≥
+028500             ,  SSMS2√Ω≥
+028600             ,  SSMS3Ω≥
+028700             ,  SSMS3√Ω≥
+028800             ,  ¡’≥F∆›Ωﬁ≥
+028900             ,  Ãﬁ∂NO
+029000             ,  ”∏À÷≥1
+029100             ,  ”∏À÷≥2
+029200*@@@ 2013/05/22 ST
+029300             ,   ﬁ≤ ﬁ≤SHKB
+029400*@@@ 2013/05/22 ED
+029500         FROM
+029600               DBMSDB_TANMAST
+029700         ORDER  BY
+029800                ¿›ƒ≥NO
+029900     END-EXEC
+030000*
+030100     MOVE  'OPEN  curTANMAST' TO  EXEC-SQL-INFO
+030200     EXEC SQL
+030300       OPEN  curTANMAST
+030400     END-EXEC
+030500*
+030600     CONTINUE.
+030700 999.
+030800     EXIT.
+030900*
+031000******************************************************************
+031100*    SQL TANMAST FETCHÉvÉçÉVÅ[ÉWÉÉ                               *
+031200******************************************************************
+031300 TANMAST-FETCH-PROC              SECTION.
+031400 000.
+031500*
+031600     MOVE  'TANMAST-FETCH-PROC'  TO  EXEC-SQL-INFO
+031700     MOVE  SPACE                 TO  EXEC-SQL-MSG
+031800*
+031900     EXEC SQL
+032000       FETCH curTANMAST
+032100         INTO
+032200               :¿›ƒ≥NO-TAN-DB
+032300             , :K¿›ƒ≥“≤-TAN-DB
+032400             , :º√›NO-TAN-DB
+032500             , :∏ﬁŸ∞Ãﬂ-TAN-DB
+032600             , :YDKG≥ÿ-TAN-DB
+032700             , :YDKG∂≤-TAN-DB
+032800             , :YDKS≥ÿ-TAN-DB
+032900             , :YDKS∂≤-TAN-DB
+033000             , :YDTG≥ÿ-TAN-DB
+033100             , :YDTG∂≤-TAN-DB
+033200             , :YDTS≥ÿ-TAN-DB
+033300             , :YDTS∂≤-TAN-DB
+033400             , :YDø≥∂Ãﬁ-TAN-DB
+033500             , :YDø≥√Ω≥-TAN-DB
+033600             , :YMKG≥ÿ-TAN-DB
+033700             , :YMKG∂≤-TAN-DB
+033800             , :YMKS≥ÿ-TAN-DB
+033900             , :YMKS∂≤-TAN-DB
+034000             , :YMTG≥ÿ-TAN-DB
+034100             , :YMTG∂≤-TAN-DB
+034200             , :YMTS≥ÿ-TAN-DB
+034300             , :YMTS∂≤-TAN-DB
+034400             , :YMø≥∂Ãﬁ-TAN-DB
+034500             , :YMø≥√Ω≥-TAN-DB
+034600             , :UDKG≥ÿ-TAN-DB
+034700             , :UDKG∂≤-TAN-DB
+034800             , :UDKS≥ÿ-TAN-DB
+034900             , :UDKS∂≤-TAN-DB
+035000             , :UDTG≥ÿ-TAN-DB
+035100             , :UDTG∂≤-TAN-DB
+035200             , :UDTS≥ÿ-TAN-DB
+035300             , :UDTS∂≤-TAN-DB
+035400             , :UDø≥∂Ãﬁ-TAN-DB
+035500             , :UDø≥√Ω≥-TAN-DB
+035600             , :UMKG≥ÿ-TAN-DB
+035700             , :UMKG∂≤-TAN-DB
+035800             , :UMKS≥ÿ-TAN-DB
+035900             , :UMKS∂≤-TAN-DB
+036000             , :UMTG≥ÿ-TAN-DB
+036100             , :UMTG∂≤-TAN-DB
+036200             , :UMTS≥ÿ-TAN-DB
+036300             , :UMTS∂≤-TAN-DB
+036400             , :UMø≥∂Ãﬁ-TAN-DB
+036500             , :UMø≥√Ω≥-TAN-DB
+036600             , :≥ÿ¿¡ªﬁ›-TAN-DB
+036700             , :∂≤¿¡ªﬁ›-TAN-DB
+036800             , :SSDC≥ÿ-TAN-DB
+036900             , :SSDC∂≤-TAN-DB
+037000             , :SSDCªﬁ›-TAN-DB
+037100             , :SSDƒ≥º›F-TAN-DB
+037200             , :SSDWº›∑-TAN-DB
+037300             , :SSDWπ≤øﬁ∏-TAN-DB
+037400             , :SSDS1Ω≥-TAN-DB
+037500             , :SSDS1√Ω≥-TAN-DB
+037600             , :SSDS2Ω≥-TAN-DB
+037700             , :SSDS2√Ω≥-TAN-DB
+037800             , :SSDS3Ω≥-TAN-DB
+037900             , :SSDS3√Ω≥-TAN-DB
+038000             , :SSMC≥ÿ-TAN-DB
+038100             , :SSMC∂≤-TAN-DB
+038200             , :SSMCªﬁ›-TAN-DB
+038300             , :SSMƒ≥º›F-TAN-DB
+038400             , :SSMWº›∑-TAN-DB
+038500             , :SSMWπ≤øﬁ∏-TAN-DB
+038600             , :SSMS1Ω≥-TAN-DB
+038700             , :SSMS1√Ω≥-TAN-DB
+038800             , :SSMS2Ω≥-TAN-DB
+038900             , :SSMS2√Ω≥-TAN-DB
+039000             , :SSMS3Ω≥-TAN-DB
+039100             , :SSMS3√Ω≥-TAN-DB
+039200             , :¡’≥F∆›Ωﬁ≥-TAN-DB
+039300             , :Ãﬁ∂NO-TAN-DB
+039400             , :”∏À÷≥1-TAN-DB
+039500             , :”∏À÷≥2-TAN-DB
+039600*@@@ 2013/05/22 ST
+039700             , : ﬁ≤ ﬁ≤SHKB-TAN-DB
+039800*@@@ 2013/05/22 ED
+039900     END-EXEC
+040000*
+040100     IF  SQLCODE  = 100
+040200       THEN
+040300         MOVE  '1'               TO  FLG-INV
+040400       ELSE
+040500         MOVE  '0'               TO  FLG-INV
+040600         PERFORM  GET-TANMAST-PROC
+040700     END-IF
+040800*
+040900     CONTINUE.
+041000 999.
+041100     EXIT.
+041200*
+041300******************************************************************
+041400*    SQL SAITESF INSERTãÂÉvÉçÉVÅ[ÉWÉÉ                            *
+041500******************************************************************
+041600 SAITESF-INSERT-PROC             SECTION.
+041700 000.
+041800*
+041900     MOVE  'SAITESF-INSERT-PROC'     TO  EXEC-SQL-INFO
+042000     MOVE  KEY∫≥”∏-STE               TO  EXEC-SQL-MSG
+042100     INITIALIZE                  ª≤π›√Ω≥ÿ÷≥-STE-DB
+042200*
+042300     PERFORM  PUT-SAITESF-PROC
+042400*
+042500     EXEC SQL
+042600       INSERT  INTO  WORK_SAITESF
+042700           (
+042800                ¿›ƒ≥NO
+042900             ,  K¿›ƒ≥“≤
+043000             ,  º√›NO
+043100             ,  LL∞1
+043200             ,  LL∞2
+043300             ,  LL∞3
+043400             ,  LL∞4
+043500             ,  LL∞5
+043600             ,  LL∞6
+043700             ,  LL∞7
+043800             ,  LL∞8
+043900             ,  LL∞9
+044000             ,  LL∞10
+044100             ,  LL∞11
+044200             ,  LL∞12
+044300             ,  LL∞13
+044400             ,  LL∞14
+044500             ,  LL∞15
+044600             ,  LL∞16
+044700             ,  LL∞17
+044800             ,  LL∞18
+044900             ,  LL∞19
+045000           )
+045100       VALUES 
+045200           (
+045300               :¿›ƒ≥NO-STE-DB
+045400             , :K¿›ƒ≥“≤-STE-DB
+045500             , :º√›NO-STE-DB
+045600             , :LL∞1-DB
+045700             , :LL∞2-DB
+045800             , :LL∞3-DB
+045900             , :LL∞4-DB
+046000             , :LL∞5-DB
+046100             , :LL∞6-DB
+046200             , :LL∞7-DB
+046300             , :LL∞8-DB
+046400             , :LL∞9-DB
+046500             , :LL∞10-DB
+046600             , :LL∞11-DB
+046700             , :LL∞12-DB
+046800             , :LL∞13-DB
+046900             , :LL∞14-DB
+047000             , :LL∞15-DB
+047100             , :LL∞16-DB
+047200             , :LL∞17-DB
+047300             , :LL∞18-DB
+047400             , :LL∞19-DB
+047500           )
+047600     END-EXEC
+047700*
+047800     CONTINUE.
+047900 999.
+048000     EXIT.
+048100*
+048200******************************************************************
+048300*    ÇrÇpÇkÉGÉâÅ[èàóù                                            *
+048400     EXEC SQL
+048500       COPY  SQLPROC
+048600     END-EXEC.
+048700*
+048800     COPY  GP-TANMAST.
+048900     COPY  GP-SAITESF.
+049000*
