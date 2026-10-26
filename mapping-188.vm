@@ -1,0 +1,251 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<records>
+#set ($docId = $system.nextSequenceID)
+#set ($items = $root.xpath("/cXML/Request/OrderRequest/ItemOut"))
+#foreach($item in $items)
+#set ($index = $counter.nextVal() )
+<record type="jp.co.otsukashokai.tanomail.app.entity.B2bJuchuWk">
+
+ <!--1:B2B受注ID-->
+<field id="b2bJuchuId" value="$!esc.xml($system.sequenceID)" dataType="NUMBER" dataFormat="" />
+
+ <!--2:メッセージID-->
+<field id="messageId" value="$!esc.xml($filter.concat($system.getStrServerDate("yyyyMMddHHmmss.SSS"),".",$docId,"@",$system.serverName))" dataType="VARCHAR2" dataFormat="" />
+
+ <!--3:連番-->
+<field id="seqNo" value="$!esc.xml($index)" dataType="NUMBER" dataFormat="" />
+
+ <!--4:サーバ名-->
+<field id="serverNm" value="$!esc.xml($system.serverName)" dataType="VARCHAR2" dataFormat="" />
+
+ <!--5:B2B受注処理区分-->
+<field id="b2bJuchuShoriKbn" value="$!esc.xml("00")" dataType="CHAR" dataFormat="" />
+
+ <!--6:B2B受注取込処理日時-->
+<field id="b2bJuchuTorikomiShoriDate" setNull="true"/>
+
+ <!--7:マーケットプレイス識別コード-->
+<field id="marketPlaceShikibetsuCd" value="$!esc.xml($system.mpcd)" dataType="CHAR" dataFormat="" />
+
+ <!--8:バイヤ識別コード-->
+<field id="buyerShikibetsuCd" value="$!esc.xml($root.xpath("/cXML/Header/From/Credential[@domain='NetworkId']/Identity/text()"))" dataType="VARCHAR2" dataFormat="" />
+
+ <!--9:バイヤ内請求単位コード-->
+<field id="buyerSeikyuTaniCd" value="$!esc.xml($root.xpath("/cXML/Request/OrderRequest/OrderRequestHeader/Extrinsic[@name='CompanyCode']/text()"))" dataType="VARCHAR2" dataFormat="" />
+
+ <!--10:オーダー識別ID-->
+<field id="orderShikibetsuId" value="$!esc.xml($filter.concat($root.xpath("/cXML/Request/OrderRequest/OrderRequestHeader/@orderID"),"-",$filter.numberFormat($filter.toInt($item.xpath("@lineNumber")),"000")))" dataType="VARCHAR2" dataFormat="" />
+
+ <!--11:オーダーID-->
+<field id="orderId"  setNull="true"/>
+
+ <!--12:EUオーダーID-->
+<field id="euOrderId" value="$!esc.xml($root.xpath("/cXML/Request/OrderRequest/OrderRequestHeader/@orderID"))" dataType="VARCHAR2" dataFormat="" />
+
+ <!--13:オーダータイムスタンプ-->
+<field id="orderTimestamp" value="$!esc.xml($root.xpath("/cXML/@timestamp"))" dataType="VARCHAR2" dataFormat="" />
+
+ <!--14:EUオーダータイムスタンプ-->
+<field id="euOrderTimestamp" value="$!esc.xml($root.xpath("/cXML/Request/OrderRequest/OrderRequestHeader/@orderDate"))" dataType="VARCHAR2" dataFormat="" />
+
+ <!--15:CXMLペイロードID-->
+<field id="cxmlPayloadId" value="$!esc.xml($root.xpath("/cXML/@payloadID"))" dataType="VARCHAR2" dataFormat="" />
+
+ <!--17:メッセージ種別-->
+<field id="messageType" value="$!esc.xml($root.xpath("/cXML/Request/OrderRequest/OrderRequestHeader/@type"))" dataType="VARCHAR2" dataFormat="" />
+
+ <!--18:B2Bサーバー処理日時-->
+<field id="b2bServerShoriDate" value="$!esc.xml($system.getStrServerDate("yyyyMMddHHmmss.SSS"))" dataType="DATE" dataFormat="yyyyMMddHHmmss.SSS" />
+
+ <!--26:配送先名1-->
+<field id="haisoNm1" value="$!esc.xml($root.xpath("/cXML/Request/OrderRequest/OrderRequestHeader/ShipTo/Address/Name/text()"))" dataType="VARCHAR2" dataFormat="" />
+
+ <!--27:配送先名2-->
+<field id="haisoNm2" value="$!esc.xml($root.xpath("/cXML/Request/OrderRequest/OrderRequestHeader/ShipTo/Address/PostalAddress/Street[3]/text()"))" dataType="VARCHAR2" dataFormat="" />
+
+ <!--29:配送先コード-->
+<field id="haisosakiCd" value="$!esc.xml($root.xpath("/cXML/Request/OrderRequest/OrderRequestHeader/ShipTo/Address/@addressID"))" dataType="VARCHAR2" dataFormat="" />
+
+ <!--30:配送先郵便番号-->
+<field id="haisoPostno" value="$!esc.xml($root.xpath("/cXML/Request/OrderRequest/OrderRequestHeader/ShipTo/Address/PostalAddress/PostalCode/text()"))" dataType="VARCHAR2" dataFormat="" />
+
+ <!--31:配送先State-->
+<field id="haisoState" value="$!esc.xml($root.xpath("/cXML/Request/OrderRequest/OrderRequestHeader/ShipTo/Address/PostalAddress/State/text()"))" dataType="VARCHAR2" dataFormat="" />
+
+ <!--32:配送先City-->
+<field id="haisoCity" value="$!esc.xml($root.xpath("/cXML/Request/OrderRequest/OrderRequestHeader/ShipTo/Address/PostalAddress/City/text()"))" dataType="VARCHAR2" dataFormat="" />
+
+ <!--33:配送先ADDRESS1-->
+<field id="haisoAddr1" value="$!esc.xml($root.xpath("/cXML/Request/OrderRequest/OrderRequestHeader/ShipTo/Address/PostalAddress/Street[1]/text()"))" dataType="VARCHAR2" dataFormat="" />
+
+ <!--34:配送先ADDRESS2-->
+<field id="haisoAddr2" value="$!esc.xml($root.xpath("/cXML/Request/OrderRequest/OrderRequestHeader/ShipTo/Address/PostalAddress/Street[2]/text()"))" dataType="VARCHAR2" dataFormat="" />
+
+ <!--35:配送先ADDRESS3-->
+<field id="haisoAddr3" setNull="true"/>
+
+ <!--38:受取担当者名-->
+<field id="uketoriTanNm" setNull="true"/>
+
+ <!--39:受取担当者電話番号-->
+<field id="uketoriTanTelno" value="$!esc.xml($root.xpath("/cXML/Request/OrderRequest/OrderRequestHeader/ShipTo/Address/Phone[@name='work']/TelephoneNumber/Number/text()"))" dataType="VARCHAR2" dataFormat="" />
+
+ <!--41:受取担当者E-Mailアドレス-->
+<field id="uketoriTanEmail" setNull="true"/>
+
+ <!--42:ヘッダ用予備項目1-->
+<field id="hedYobiItem1" value="$!esc.xml($root.xpath("/cXML/Request/OrderRequest/OrderRequestHeader/ShipTo/Address/Phone[@name='work']/TelephoneNumber/AreaOrCityCode/text()"))" dataType="VARCHAR2" dataFormat="" />
+
+ <!--43:ヘッダ用予備項目2-->
+<field id="hedYobiItem2" setNull="true"/>
+
+ <!--44:ヘッダ用予備項目3-->
+<field id="hedYobiItem3" setNull="true"/>
+
+ <!--45:ヘッダ用予備項目4-->
+<field id="hedYobiItem4" setNull="true"/>
+
+ <!--46:ヘッダ用予備項目5-->
+<field id="hedYobiItem5" setNull="true"/>
+
+ <!--47:ヘッダ用予備項目6-->
+<field id="hedYobiItem6" setNull="true"/>
+
+ <!--48:ヘッダ用予備項目7-->
+<field id="hedYobiItem7" setNull="true"/>
+
+ <!--49:ヘッダ用予備項目8-->
+<field id="hedYobiItem8" setNull="true"/>
+
+ <!--50:ヘッダ用予備項目9-->
+<field id="hedYobiItem9" setNull="true"/>
+
+ <!--51:ヘッダ用予備項目10-->
+<field id="hedYobiItem10" setNull="true"/>
+
+ <!--52:ヘッダ用予備項目11-->
+<field id="hedYobiItem11" setNull="true"/>
+
+ <!--53:ヘッダ用予備項目12-->
+<field id="hedYobiItem12" setNull="true"/>
+
+ <!--54:ヘッダ用予備項目13-->
+<field id="hedYobiItem13" setNull="true"/>
+
+ <!--55:ヘッダ用予備項目14-->
+<field id="hedYobiItem14" setNull="true"/>
+
+ <!--56:ヘッダ用予備項目15-->
+<field id="hedYobiItem14" setNull="true"/>
+
+ <!--57:ヘッダ用予備項目16-->
+<field id="hedYobiItem16" setNull="true"/>
+
+ <!--58:ヘッダ用予備項目17-->
+<field id="hedYobiItem17" setNull="true"/>
+
+ <!--59:ヘッダ用予備項目18-->
+<field id="hedYobiItem18" setNull="true"/>
+
+ <!--60:ヘッダ用予備項目19-->
+<field id="hedYobiItem19" setNull="true"/>
+
+ <!--61:ヘッダ用予備項目20-->
+<field id="hedYobiItem20" setNull="true"/>
+
+ <!--62:行番号-->
+<field id="gyoNo" value="$!esc.xml($item.xpath("@lineNumber"))" dataType="VARCHAR2" dataFormat="" />
+
+ <!--63:注文番号-->
+<field id="chumonNo" value="$!esc.xml($item.xpath("ItemID/SupplierPartID/text()"))" dataType="VARCHAR2" dataFormat="" />
+
+ <!--64:商品名(漢字)-->
+<field id="shoNm" value="$!esc.xml($item.xpath("ItemDetail/Description/text()"))" dataType="VARCHAR2" dataFormat="" />
+
+ <!--65:数量-->
+<field id="cnt" value="$!esc.xml($item.xpath("@quantity"))" dataType="VARCHAR2" dataFormat="" />
+
+ <!--66:単位-->
+<field id="tani" value="$!esc.xml($item.xpath("ItemDetail/UnitOfMeasure/text()"))" dataType="VARCHAR2" dataFormat="" />
+
+ <!--67:提供価格-->
+<field id="teikyoKakaku" value="$!esc.xml($item.xpath("ItemDetail/UnitPrice/Money/text()"))" dataType="VARCHAR2" dataFormat="" />
+
+ <!--69:ユーザ発注番号-->
+<field id="userHacchuNo" value="$!esc.xml($item.xpath("@lineNumber"))"  dataType="VARCHAR2" dataFormat="" />
+
+ <!--70:ユーザ摘要-->
+<field id="userTekiyo" value="$!esc.xml($item.xpath("ItemDetail/Classification[@domain='UNSPSC']/text()"))" dataType="VARCHAR2" dataFormat="" />
+
+ <!--71:納品日-->
+<field id="nohinDt" value="$!esc.xml($item.xpath("@requestedDeliveryDate"))" dataType="VARCHAR2" dataFormat="" />
+
+ <!--72:明細用予備項目1-->
+<field id="meiYobiItem1" value="$!esc.xml($item.xpath("ItemID/SupplierPartAuxiliaryID/text()"))" dataType="VARCHAR2" dataFormat="" />
+
+ <!--73:明細用予備項目2-->
+<field id="meiYobiItem2" value="$!esc.xml($item.xpath("ItemDetail/ManufacturerPartID/text()"))" dataType="VARCHAR2" dataFormat="" />
+
+ <!--74:明細用予備項目3-->
+<field id="meiYobiItem3" value="$!esc.xml($item.xpath("ItemDetail/ManufacturerName/text()"))" dataType="VARCHAR2" dataFormat="" />
+
+ <!--75:明細用予備項目4-->
+<field id="meiYobiItem4" setNull="true"/>
+
+ <!--76:明細用予備項目5-->
+<field id="meiYobiItem5" setNull="true"/>
+
+ <!--77:明細用予備項目6-->
+<field id="meiYobiItem6" setNull="true"/>
+
+ <!--78:明細用予備項目7-->
+<field id="meiYobiItem7" setNull="true"/>
+
+ <!--79:明細用予備項目8-->
+<field id="meiYobiItem8" setNull="true"/>
+
+ <!--80:明細用予備項目9-->
+<field id="meiYobiItem9" setNull="true"/>
+
+ <!--81:明細用予備項目10-->
+<field id="meiYobiItem10" setNull="true"/>
+
+ <!--82:明細用予備項目11-->
+<field id="meiYobiItem11" setNull="true"/>
+
+ <!--83:明細用予備項目12-->
+<field id="meiYobiItem12" setNull="true"/>
+
+ <!--84:明細用予備項目13-->
+<field id="meiYobiItem13" setNull="true"/>
+
+ <!--85:明細用予備項目14-->
+<field id="meiYobiItem14" setNull="true"/>
+
+ <!--86:明細用予備項目15-->
+<field id="meiYobiItem15" setNull="true"/>
+
+ <!--87:明細用予備項目16-->
+<field id="meiYobiItem16" setNull="true"/>
+
+ <!--88:明細用予備項目17-->
+<field id="meiYobiItem17" setNull="true"/>
+
+ <!--89:明細用予備項目18-->
+<field id="meiYobiItem18" setNull="true"/>
+
+ <!--90:明細用予備項目19-->
+<field id="meiYobiItem19" setNull="true"/>
+
+ <!--91:明細用予備項目20-->
+<field id="meiYobiItem20" setNull="true"/>
+
+ <!--92:明細用予備項目21-->
+<field id="meiYobiItem21" setNull="true"/>
+
+ <!--93:明細用予備項目22-->
+<field id="meiYobiItem22" setNull="true"/>
+
+</record>
+#end
+</records>
