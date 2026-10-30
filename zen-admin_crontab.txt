@@ -1,0 +1,162 @@
+﻿# 予約料金レコード削除
+5 2 1 * * php /home/zen/admin/_application/libs/BatchEntry.php resPrice delete
+# 予約料金アクティビティレコード削除
+5 2 2 * * php /home/zen/admin/_application/libs/BatchEntry.php resPriceActivity delete
+# 予約料金レコード追加作成
+5 0 1 * * php /home/zen/admin/_application/libs/BatchEntry.php resPrice insert
+# アクティビティ予約料金レコード追加作成
+5 0 2 * * php /home/zen/admin/_application/libs/BatchEntry.php resPriceActivity insert
+# 客室在庫テーブルのレコード削除
+5 3 1 * * php /home/zen/admin/_application/libs/BatchEntry.php roomStock delete >> /home/zen/admin/logs/batch.log
+# アイテム在庫テーブルのレコード削除
+5 3 2 * * php /home/zen/admin/_application/libs/BatchEntry.php itemStock delete
+# 客室在庫テーブルのレコード作成
+5 1 1 * * php /home/zen/admin/_application/libs/BatchEntry.php roomStock insert >> /home/zen/admin/logs/batch.log
+# アイテム在庫テーブルのレコード作成
+5 1 2 * * php /home/zen/admin/_application/libs/BatchEntry.php itemStock insert
+# 有料オプション料金テーブルのレコード削除
+5 6 1 * * php /home/zen/admin/_application/libs/BatchEntry.php resChargedOptionPrice delete >> /home/zen/admin/logs/batch.log
+# 有料オプション料金テーブルのレコード作成
+5 4 1 * * php /home/zen/admin/_application/libs/BatchEntry.php resChargedOptionPrice insert >> /home/zen/admin/logs/batch.log
+# 有料オプション在庫テーブルのレコード削除
+5 7 1 * * php /home/zen/admin/_application/libs/BatchEntry.php chargedOptionStock delete >> /home/zen/admin/logs/batch.log
+# 有料オプション在庫テーブルのレコード作成
+5 5 1 * * php /home/zen/admin/_application/libs/BatchEntry.php chargedOptionStock insert >> /home/zen/admin/logs/batch.log
+# 共有オプション在庫テーブルのレコード削除
+30 7 1 * * php /home/zen/admin/_application/libs/BatchEntry.php sharedOptionStock delete >> /home/zen/admin/logs/batch.log
+# 共有オプション在庫テーブルのレコード作成
+30 5 1 * * php /home/zen/admin/_application/libs/BatchEntry.php sharedOptionStock insert >> /home/zen/admin/logs/batch.log
+# 施設CSVテーブル取り込み処理
+0 2 * * * php /home/zen/admin/_application/libs/BatchEntry.php facilityCsv insert >> /home/zen/admin/logs/batch.log
+# 宿泊リマインダメール送信
+0 * * * * php /home/zen/admin/_application/libs/BatchEntry.php mail NotifyMailSend stay
+# アクティビティリマインダメール送信
+0 * * * * php /home/zen/admin/_application/libs/BatchEntry.php mail NotifyMailSend activity
+# クーポンリマインダメール送信
+10 * * * * php /home/zen/admin/_application/libs/BatchEntry.php mail CouponReminder >> /home/zen/admin/logs/batch.log
+# リクエスト予約承認リマインドメール送信
+0 7 * * * php /home/zen/admin/_application/libs/BatchEntry.php mail RequestApprovalRemind >> /home/zen/admin/logs/batch.log
+# カンデオホテルズ 予約情報連携
+0 7 * * * php /home/zen/admin/_application/libs/BatchEntry.php candeo resLinkage normal >> /home/zen/admin/logs/batch.log
+# カンデオホテルズ 会員情報連携
+0 7 * * * php /home/zen/cp2/_application/libs/BatchEntry.php candeo memberLinkage normal >> /home/zen/admin/logs/batch.log
+# 予約レコードチェック : 購入ＩＤ重複
+0 9 * * * php /home/zen/admin/_application/libs/BatchEntry.php reservation report resDetailPaymentIdDuplicate >> /home/zen/admin/logs/batch.log
+# 予約レコードチェック : 会員割引情報欠落
+3 9 * * * php /home/zen/admin/_application/libs/BatchEntry.php reservation report resDetailMissingMemberDiscount >> /home/zen/admin/logs/batch.log
+# 決済データチェック（複数施設紐付け検出）
+6 9 * * * php /home/zen/admin/_application/libs/BatchEntry.php reserpay report paymentIdAssociateDifferentFacilityReport
+# 決済データチェック（予約詳細無決済検出）
+9 9 * * * php /home/zen/admin/_application/libs/BatchEntry.php reserpay report resDetailCdOptimaNotExistsReport
+# 決済データチェック（決済キャンセル検出）
+12 9 * * * php /home/zen/admin/_application/libs/BatchEntry.php reserpay report resDetailCdPaymentCanceledReport
+# 未決済予約キャンセル
+*/10 * * * * php /home/zen/admin/_application/libs/BatchEntry.php res cxlTentative >> /home/zen/admin/logs/batch.log
+# リクエスト予約自動否認バッチ（毎時0分に実行）
+0 * * * * php /home/zen/admin/_application/libs/BatchEntry.php res autoReject >> /home/zen/admin/logs/batch.log
+# cacheクリア
+30 2 * * * php /home/zen/admin/_application/libs/BatchEntry.php cache cacheClear
+0 10 * * * php /home/zen/admin/_application/libs/BatchEntry.php cache facilityCacheClear harvestGroupTop
+# IHGANA 差分検知バッチ
+*/15 * * * * php /home/zen/admin/_application/libs/BatchEntry.php ihgana detectDiff
+# IHGANA 料金取り込み（OPTIMA差分）バッチ1
+*/15 * * * * php /home/zen/admin/_application/libs/BatchEntry.php ihgana importPriceByOptimaDiff 1
+# IHGANA 料金取り込み（OPTIMA差分）バッチ2
+3-48/15 * * * * php /home/zen/admin/_application/libs/BatchEntry.php ihgana importPriceByOptimaDiff 2
+# IHGANA 料金取り込み（OPTIMA差分）バッチ3
+6-51/15 * * * * php /home/zen/admin/_application/libs/BatchEntry.php ihgana importPriceByOptimaDiff 3
+# IHGANA 料金取り込み（OPTIMA差分）バッチ4
+9-54/15 * * * * php /home/zen/admin/_application/libs/BatchEntry.php ihgana importPriceByOptimaDiff 4
+# IHGANA 料金取り込み（OPTIMA差分）バッチ5
+12-57/15 * * * * php /home/zen/admin/_application/libs/BatchEntry.php ihgana importPriceByOptimaDiff 5
+# IHGANA 料金取り込み（Concerto差分）バッチ1
+*/15 * * * * php /home/zen/admin/_application/libs/BatchEntry.php ihgana importPriceByConcertoDiff 1
+# IHGANA 料金取り込み（Concerto差分）バッチ2
+3-48/15 * * * * php /home/zen/admin/_application/libs/BatchEntry.php ihgana importPriceByConcertoDiff 2
+# IHGANA 料金取り込み（Concerto差分）バッチ3
+6-51/15 * * * * php /home/zen/admin/_application/libs/BatchEntry.php ihgana importPriceByConcertoDiff 3
+# IHGANA 料金取り込み（Concerto差分）バッチ4
+9-54/15 * * * * php /home/zen/admin/_application/libs/BatchEntry.php ihgana importPriceByConcertoDiff 4
+# IHGANA 料金取り込み（Concerto差分）バッチ5
+12-57/15 * * * * php /home/zen/admin/_application/libs/BatchEntry.php ihgana importPriceByConcertoDiff 5
+# IHGANA Extra Person Charge同期バッチ
+*/10 * * * * php /home/zen/admin/_application/libs/BatchEntry.php ihgana syncExtraPersonCharge
+# 操作履歴レコード削除処理
+0 2 25 * * php /home/zen/admin/_application/libs/BatchEntry.php history delete
+# ダウンロード期限切れデータ削除処理
+0 3 * * * php /home/zen/admin/_application/libs/BatchEntry.php generateFile delete
+# 不要レコード削除(月次)処理
+0 2 16 * * php /home/zen/admin/_application/libs/BatchEntry.php cleaner monthly
+# 空室待ち通知レコード削除処理
+5 4 4 * * php /home/zen/admin/_application/libs/BatchEntry.php emptyRoomWaitingNotification delete
+# CP2 連携用会員情報CSV作成バッチ ※73942対応 バッチの利用開始までコメントアウトし実行対象外にする
+# 0 1 * * * php /home/zen/cp2/_application/libs/BatchEntry.php externalDataLink createMemberCsv
+# 連携用予約情報CSV作成バッチ ※73942対応 バッチの利用開始までコメントアウトし実行対象外にする
+# 0 0 * * * php /home/zen/admin/_application/libs/BatchEntry.php externalDataLink createResCsv
+# ファイル外部連携バッチ(会員) ※73942対応 バッチの利用開始までコメントアウトし実行対象外にする
+# 40 0 * * * php /home/zen/cp2/_application/libs/BatchEntry.php externalDataLink fileExternalLink
+# ファイル外部連携バッチ(予約) ※73942対応 バッチの利用開始までコメントアウトし実行対象外にする
+# 30 0 * * * php /home/zen/admin/_application/libs/BatchEntry.php externalDataLink fileExternalLink
+
+# RESERPAY SBPS実績連携
+0 4 5 * * php /home/zen/reserpay/_application/libs/BatchEntry.php sbps closing >> /home/zen/reserpay/logs/batch.log
+# RESERPAY 決済レコードチェック
+0 9,13,17,21 * * * php /home/zen/reserpay/_application/libs/BatchEntry.php payment report >> /home/zen/reserpay/logs/batch.log
+# 操作履歴レコード削除処理
+0 2 25 * * php /home/zen/reserpay/_application/libs/BatchEntry.php history delete >> /home/zen/reserpay/logs/batch.log
+
+# CP2 会員ランク自動更新（ランクアップ）
+0 1 * * * php /home/zen/cp2/_application/libs/BatchEntry.php rank update up >> /home/zen/cp2/logs/batch.log
+# CP2 会員ランク自動更新（ランクダウン）
+0 3 * * * php /home/zen/cp2/_application/libs/BatchEntry.php rank update down >> /home/zen/cp2/logs/batch.log
+# CP2 ダウンロード期限切れ会員情報CSV削除処理
+0 3 * * * php /home/zen/cp2/_application/libs/BatchEntry.php memberCsv delete >> /home/zen/cp2/logs/batch.log
+# CP2 ダウンロード期限切れポイント実績CSV削除処理
+0 3 * * * php /home/zen/cp2/_application/libs/BatchEntry.php pointResultCsv delete >> /home/zen/cp2/logs/batch.log
+# CP2 ホテル京阪 会員情報再連携
+0 7 * * * php /home/zen/cp2/_application/libs/BatchEntry.php hotelKeihan memberLinkage relink >> /home/zen/cp2/logs/hotelKeihan.log
+# CP2 ポイント失効アラート
+0 10 * * * php /home/zen/cp2/_application/libs/BatchEntry.php mail pointExpirationAlert >> /home/zen/cp2/logs/batch.log
+# 操作履歴レコード削除処理
+0 2 25 * * php /home/zen/cp2/_application/libs/BatchEntry.php history delete >> /home/zen/cp2/logs/batch.log
+# スーパーホテル QRロトチェックイン情報加工バッチ
+* 0-2,12-23 * * * for i in `seq 0 20 59`;do (sleep ${i}; php /home/zen/admin/_application/libs/BatchEntry.php superHotel analysisLoto) & done;
+*/1 3-11 * * * php /home/zen/admin/_application/libs/BatchEntry.php superHotel analysisLoto
+# スーパーホテル QRロトプッシュ通知バッチ(即時配信)
+*/1 * * * * php /home/zen/admin/_application/libs/BatchEntry.php superHotel qrLotoPushNotification 1
+# スーパーホテル QRロトプッシュ通知バッチ(アーリーチェックイン、連泊送信)
+0 15 * * * php /home/zen/admin/_application/libs/BatchEntry.php superHotel qrLotoPushNotification 2
+# スーパーホテル QRロト当選人数データ作成バッチ
+30 11 * * * php /home/zen/admin/_application/libs/BatchEntry.php superHotel generateLotoWinData
+# スーパーホテル チェックアウト申告プッシュ通知バッチ
+*/1 * * * * php /home/zen/admin/_application/libs/BatchEntry.php superHotel checkoutDeclareNotification
+# スーパーホテル チェックアウト申告締切通知バッチ
+*/1 * * * * php /home/zen/admin/_application/libs/BatchEntry.php superHotel checkoutDeadlineNotification
+# スーパーホテル スーパーチェックイン対象者プッシュ通知バッチ
+0 12 * * * php /home/zen/admin/_application/libs/BatchEntry.php superHotel SuperCheckinNotification
+# スーパーホテル QRロト解析バッチの停止検知バッチ
+*/5 * * * * php /home/zen/admin/_application/libs/BatchEntry.php superHotel analysisLotoFailureDetector
+
+# 阪急阪神 法人会員連携バッチ
+0 23 * * * php /home/zen/admin/_application/libs/BatchEntry.php hankyuHanshin corporateMemberLinkage
+# 阪急阪神 個人会員連携バッチ(NEHOPS→OPTIMA)
+10-55/15 * * * * php /home/zen/cp2/_application/libs/BatchEntry.php hankyuHanshin memberLinkageFromNehops
+# 阪急阪神 個人会員連携バッチ(OPTIMA→NEHOPS)
+*/15 * * * * php /home/zen/cp2/_application/libs/BatchEntry.php hankyuHanshin memberLinkageFromOptima
+# 阪急阪神 サービス退会連携バッチ
+0 */1 * * * php /home/zen/cp2/_application/libs/BatchEntry.php hankyuHanshin unsubscribeLinkage
+# 阪急阪神 ポイント付与バッチ
+0 3 * * * php /home/zen/admin/_application/libs/BatchEntry.php hankyuHanshin pointGrant
+
+# CP2 WESTERポイント交換依頼ファイル送信
+30 1 * * * php /home/zen/cp2/_application/libs/BatchEntry.php nihonHotel westerPointLinkage send >> /home/zen/cp2/logs/jrePoint.log
+# CP2 WESTERポイント交換結果ファイル受信
+0 17 * * * php /home/zen/cp2/_application/libs/BatchEntry.php nihonHotel westerPointLinkage recv >> /home/zen/cp2/logs/jrePoint.log
+# CP2 JRキューポ交換依頼ファイル送信
+0 10 * * * php /home/zen/cp2/_application/libs/BatchEntry.php nihonHotel jrKyupoLinkage send >> /home/zen/cp2/logs/jrePoint.log
+# CP2 JRキューポ交換結果ファイル受信
+0 17 * * * php /home/zen/cp2/_application/libs/BatchEntry.php nihonHotel jrKyupoLinkage recv >> /home/zen/cp2/logs/jrePoint.log
+
+# アラートメールレポート送信バッチ
+0 9 * * * php /home/zen/admin/_application/libs/BatchEntry.php alert alertMailReport 16:00:00
+0 16 * * * php /home/zen/admin/_application/libs/BatchEntry.php alert alertMailReport 09:00:00

@@ -1,0 +1,8 @@
+﻿# 予約料金レコード削除
+0 2 1 * * php /home/zen/admin/_application/libs/BatchEntry.php resPrice delete >> /home/zen/admin/logs/batch.log
+# 予約料金レコード追加作成
+0 3 1 * * php /home/zen/admin/_application/libs/BatchEntry.php resPrice insert >> /home/zen/admin/logs/batch.log
+# 在庫テーブルのレコード削除
+0 4 1 * * php /home/zen/admin/_application/libs/BatchEntry.php roomStock delete >> /home/zen/admin/logs/batch.log
+# 在庫テーブルのレコード作成
+0 5 1 * * php /home/zen/admin/_application/libs/BatchEntry.php roomStock insert >> /home/zen/admin/logs/batch.log

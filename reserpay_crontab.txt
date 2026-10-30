@@ -1,0 +1,2 @@
+﻿# SBPS実績連携
+0 4 5 * * php /home/zen/reserpay/_application/libs/BatchEntry.php  sbps closing >> /home/moremall/logs/batch.log
